@@ -23,7 +23,7 @@ input a, b, cin;
 input c_b1;// The subtract command signal
 
 wire bin;
-xor bin_logic(bin, b, cmd[1]);
+xor bin_logic(bin, b, c_b1);
 full_adder fa1(cout, sum, a, bin, cin);
 endmodule
 
@@ -61,8 +61,8 @@ endmodule
 
 
 //Module that computes sums, subs and padds.
-module au( result, cout, Cmd, A, B);
-output [15:0] result;
+module au( Result, cout, Cmd, A, B);
+output [15:0] Result;
 output cout; //The Carry from the last bit.
 input [3:0] Cmd;
 input [15:0] A, B;
@@ -86,7 +86,7 @@ endgenerate
 
 //Create the first bit in the second half of the RCA (needs to be different so we don't carry from first half in the case of
 //padd
-alu_common_bits rca_b8(w_carry[8], Sum[8], A[8], B[8], w_carry[7] & Cmd[3], Cmd[1]);
+alu_common_bits rca_b8(w_carry[8], Sum[8], A[8], B[8], w_carry[7] & ~Cmd[3], Cmd[1]);
 
 //Generate the second half of the RCA.
 generate
@@ -97,7 +97,29 @@ endgenerate
 /******         End Generation of RCA           **********/
 
 //Process for overflow from both upper and lower.
+//TODO: ENABLE
 vl check_overflow(v_low,v_high,Sum,A,B);
+assign low_v_use = ((v_low & Cmd[3]) | (v_high & ~Cmd[3]));
+
+//TESTING PURPOSES
+//assign Result = 16'h0000;
+//assign Result[0] = Sum[0];
+//assign Result[0] = 1'hf;
+//assign Result[15:1] = 15'hffff;
+//assign Result = Sum;
+
+//TODO/BUG: Fix v_high. and v_low detection.
+//assign low_v_use = 0;
+
+//overflow_detect v_h_d(v_high, A[15], B[15], Sum[15]);
+//assign v_high = 0;
 
 //TODO: Based on overflow output the final sum.
+//Output for the lower bits
+assign Result[6:0] = ~low_v_use ? Sum[6:0] : ~Cmd[1]; //TODO: May be a bug here since CMD is only a single bit wire going to bus
+assign Result[7] = ~low_v_use ? Sum[7] : ~(Cmd[3]|Cmd[1]);    //Output either the sum or in overflow only a 1 if not padd and is not sub
+//Output for the upper bits
+assign Result[14:8] = ~v_high ? Sum[14:8] : ~Cmd[1];
+assign Result[15] = ~v_high ? Sum[15] : Cmd[1];
+
 endmodule
