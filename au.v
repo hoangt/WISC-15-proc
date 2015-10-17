@@ -51,19 +51,21 @@ input [15:0] S;
 assign z = |S;
 endmodule
 
-module vl(v_low, v_high, Sum, A, B);
+module vl(v_low, v_high, Sum, A, B, Cmd);
 output v_low, v_high; //Output the overflow in the lower and upper half (just use upper non padd)
 input [15:0] Sum, A, B;
+input [3:0] Cmd;
 
 overflow_detect detect_low(.v(v_low), .a(A[7]), .b(B[7]), .sum(Sum[7]));
-overflow_detect detect_high(.v(v_high), .a(A[15]), .b(B[15]), .sum(Sum[15]));
+// In subtraction, B15 is flipped.
+overflow_detect detect_high(.v(v_high), .a(A[15]), .b(B[15]^Cmd[1]), .sum(Sum[15]));
 endmodule
 
-
 //Module that computes sums, subs and padds.
-module au( Result, cout, Cmd, A, B);
+module au( Result, v, n, cout, Cmd, A, B);
 output [15:0] Result;
 output cout; //The Carry from the last bit.
+output v, n;
 input [3:0] Cmd;
 input [15:0] A, B;
 wire [15:0] w_carry;
@@ -97,9 +99,13 @@ endgenerate
 /******         End Generation of RCA           **********/
 
 //Process for overflow from both upper and lower.
-//TODO: ENABLE
-vl check_overflow(v_low,v_high,Sum,A,B);
+vl check_overflow(v_low,v_high,Sum,A,B,Cmd);
 assign low_v_use = ((v_low & Cmd[3]) | (v_high & ~Cmd[3]));
+
+//Logic for detecting if negative.
+assign n_high = (~v_high & Sum[15]) | (v_high & w_carry[15]);
+//Logic for lower bits (Mark negative if bottom is neg and paddsb, else default to n_high)
+assign n_low = (((~v_low & Sum[7]) | (v_low & w_carry[7])) & Cmd[3]) | (~Cmd[3] & n_high);
 
 //TESTING PURPOSES
 //assign Result = 16'h0000;
@@ -114,12 +120,22 @@ assign low_v_use = ((v_low & Cmd[3]) | (v_high & ~Cmd[3]));
 //overflow_detect v_h_d(v_high, A[15], B[15], Sum[15]);
 //assign v_high = 0;
 
-//TODO: Based on overflow output the final sum.
+
+
+// Based on overflow output the final sum.
 //Output for the lower bits
-assign Result[6:0] = ~low_v_use ? Sum[6:0] : ~Cmd[1]; //TODO: May be a bug here since CMD is only a single bit wire going to bus
-assign Result[7] = ~low_v_use ? Sum[7] : ~(Cmd[3]|Cmd[1]);    //Output either the sum or in overflow only a 1 if not padd and is not sub
+for (i = 0; i<= 6; i= i+ 1) begin
+    assign Result[i] = ~low_v_use ? Sum[i] : ~n_low; 
+end
+
+assign Result[7] = ~low_v_use ? Sum[7] : (n_low & Cmd[3]) | (~n_low & ~Cmd[3]);
 //Output for the upper bits
-assign Result[14:8] = ~v_high ? Sum[14:8] : ~Cmd[1];
-assign Result[15] = ~v_high ? Sum[15] : Cmd[1];
+for (i = 8; i<= 14; i= i+ 1) begin
+    assign Result[i] = ~low_v_use ? Sum[i] : ~n_high; 
+end
+assign Result[15] = ~v_high ? Sum[15] : n_high;  
+
+assign v = v_high;
+assign n = n_high;
 
 endmodule
