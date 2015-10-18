@@ -10,33 +10,57 @@ assign Result[16] = 0; //Make the garbage bit auto 0
 initial begin
     //TEST XOR
     //Alu_Ctrl = 4'b1000;
-    //for (A = 0; A < (1<<15); A = A+31) begin
-    //    for (B = 0; B < (1<<15); B = B+73) begin
+    //for (A = 0; A < (1<<16); A = A+31) begin
+    //    for (B = 0; B < (1<<16); B = B+73) begin
     //        #1
     //        if (Result != (A^B))
     //            $display("BAD XOR, A:%h B%h Result:%h Expected:%h", A, B, Result, A^B);
     //    end
     //end
     
-    //TEST NAND
+    ////TEST NAND
     //Alu_Ctrl = 4'b0100;
-    //for (A = 0; A < (1<<15); A = A+31) begin
-    //    for (B = 0; B < (1<<15); B = B+73) begin
+    //for (A = 0; A < (1<<16); A = A+31) begin
+    //    for (B = 0; B < (1<<16); B = B+73) begin
     //        #1
     //        if (Result != (~(A&B)& 17'h0ffff))
-    //            $display("BAD NAND, A:%h B%h Result:%h Expected:%h", A, B, Result, ~(A&B)& 17'h0ffff);
+    //            $display("BAD NAND, A:%b B%b Result:%b Expected:%h", A, B, Result, ~(A&B)& 17'h0ffff);
     //    end
     //end
 
-    //TEST LEFT LOG SHIFT
+    ////TEST LEFT LOG SHIFT
     //Alu_Ctrl = 4'b1100;
-    //for (A = 0; A < (1<<15); A = A+31) begin
-    //    for (B = 0; B < (1<<15); B = B+73) begin
+    //for (A = 0; A < (1<<16); A = A+31) begin
+    //    for (B = 0; B < (1<<16); B = B+73) begin
     //        #1
     //        if (Result != ((A << B[3:0])& 17'h0ffff))
     //            $display("BAD NAND, A:%h B%h Result:%h Expected:%h", A, B, Result, (A << B[3:0]) & 17'h0ffff);
     //    end
     //end
+    
+    //TEST SRL
+    //Alu_Ctrl = 4'b1110;
+    //for (A = 0; A < (1<<16); A = A+31) begin
+    //    for (B = 0; B < (1<<16); B = B+73) begin
+    //        #5
+    //        if (Result != ((A >> B[3:0])& 17'h0ffff))
+    //            $display("BAD NAND, A:%b B%b Result:%b Expected:%h", A, B, Result, (A >> B[3:0]) & 17'h0ffff);
+    //            $display("BAD NAND, A:%b B%b Result:%b Expected:%h", A, B, Result, (A >> B[3:0]) & 17'h0ffff);
+    //    end
+    //end
+
+    //TEST SRA
+    //Alu_Ctrl = 4'b1111;
+    //for (A = 16'hf000; A < (1<<16); A = A+31) begin
+    //    for (B = 0; B < (1<<16); B = B+73) begin
+    //        #1
+    //        if (Result != ( A[15:0] >>> B[3:0])) //TODO: Doesn't work for sign extension test since doesn't recognize A[15:0] as signed.
+    //            $display("BAD NAND, A:%h B%h Result:%h Expected:%h", A, B, Result, (A[15:0] >>> B[3:0]));
+    //    end
+    //end
+
+
+    //TODO: TEST FLAGS and ADDER.
 
 
     

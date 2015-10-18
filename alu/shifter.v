@@ -67,28 +67,22 @@ assign Inter_1[15] = Imm[0] ? aug_A : A[15];
 for (i=0; i <= 14; i=i+1)
     assign Inter_1[i] = Imm[0] ? A[i+1] : A[i];
 
-//Calculate what the shift bits should be (0 if l, 1 if a and top bit is 1)
-assign aug_1 = Inter_1[15] & a_nl;
 //Generate the shift r by 2
 for (i=14; i <= 15; i=i+1)
-    assign Inter_2[i] = Imm[1] ? aug_1 : Inter_1[i];
+    assign Inter_2[i] = Imm[1] ? aug_A: Inter_1[i];
 for (i=0; i <= 13; i=i+1)
     assign Inter_2[i] = Imm[1] ? Inter_1[i+2] : Inter_1[i];
 
-//Calculate what the shift bits should be (0 if l, 1 if a and top bit is 1)
-assign aug_2 = Inter_2[15] & a_nl;
 //Generate the shift r by 4
 for (i=12; i <= 15; i=i+1)
-    assign Inter_3[i] = Imm[2] ? aug_2 : Inter_2[i];
-for (i=0; i <= 13; i=i+1)
+    assign Inter_3[i] = Imm[2] ? aug_A: Inter_2[i];
+for (i=0; i <= 11; i=i+1)
     assign Inter_3[i] = Imm[2] ? Inter_2[i+4] : Inter_2[i];
 
 
-//Calculate what the shift bits should be (0 if l, 1 if a and top bit is 1)
-assign aug_3 = Inter_3[15] & a_nl;
 //Generate the shift r by 8
 for (i=8; i <= 15; i=i+1)
-    assign Result[i] = Imm[3] ? aug_3 : Inter_3[i];
+    assign Result[i] = Imm[3] ? aug_A: Inter_3[i];
 for (i=0; i <= 7; i=i+1)
     assign Result[i] = Imm[3] ? Inter_3[i+8] : Inter_3[i];
 
