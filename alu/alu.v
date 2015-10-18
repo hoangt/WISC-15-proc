@@ -1,3 +1,17 @@
+/*
+    * Control Signals as follows:
+    * 00xx => Take AU Output
+    * 01xx => Take NAND Ouput
+    * 10xx => Take XOR Output
+    * 11xx => Take Shifter Output
+    *
+    * xxx1 => Sub or Arithmetic Shift
+    * 00 => ADD
+    * 10 => PADDSB
+    * ax => a => SRL, ~a => SRA
+    * 
+    * */
+
 module alu(Result, v, n, z, A, B, Alu_ctrl);
 output [15:0] Result;
 output v,n,z;
