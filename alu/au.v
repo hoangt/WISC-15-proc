@@ -43,14 +43,6 @@ input v,s,c; //v is overflow from this clk cyc, s is sum from last bit, c is car
 assign n = (~v & s) | (v & c);
 endmodule
 
-//Logic to detect z flag activation.
-module zero_detect(z, S);
-output z;
-input [15:0] S;
-
-assign z = |S;
-endmodule
-
 module vl(v_low, v_high, Sum, A, B, Cmd);
 output v_low, v_high; //Output the overflow in the lower and upper half (just use upper non padd)
 input [15:0] Sum, A, B;
