@@ -43,61 +43,64 @@ input v,s,c; //v is overflow from this clk cyc, s is sum from last bit, c is car
 assign n = (~v & s) | (v & c);
 endmodule
 
-module vl(v_low, v_high, Sum, A, B, Cmd);
+module vl(v_low, v_high, Sum, A, B, sub);
 output v_low, v_high; //Output the overflow in the lower and upper half (just use upper non padd)
 input [15:0] Sum, A, B;
-input [3:0] Cmd;
+input sub;
 
 overflow_detect detect_low(.v(v_low), .a(A[7]), .b(B[7]), .sum(Sum[7]));
 // In subtraction, B15 is flipped.
-overflow_detect detect_high(.v(v_high), .a(A[15]), .b(B[15]^Cmd[1]), .sum(Sum[15]));
+overflow_detect detect_high(.v(v_high), .a(A[15]), .b(B[15]^sub), .sum(Sum[15]));
 endmodule
 
 //Module that computes sums, subs and padds.
-module au( Result, v, n, cout, Cmd, A, B);
+module au( Result, v, n, cout, Ctrl, A, B);
 output [15:0] Result;
 output cout; //The Carry from the last bit.
 output v, n;
-input [3:0] Cmd;
+input [1:0] Ctrl;
 input [15:0] A, B;
 wire [15:0] w_carry;
 wire [15:0] Sum;
 wire v_low, v_high;
 
+assign sub = Ctrl[0];
+assign padd = Ctrl[1];
+
 assign cout = w_carry[15];
 
 /********       Begin Generation of the RCA         ******/
 //Create the first bit in the first half of the RCA
-alu_common_bits rca_b0(w_carry[0], Sum[0], A[0], B[0], Cmd[1], Cmd[1]);
+alu_common_bits rca_b0(w_carry[0], Sum[0], A[0], B[0], sub, sub);
 
 //Generate the First half of the RCA.
 genvar i;
 generate
 for (i=1; i <= 7; i=i+1) begin:au_lower_bitgen
-    alu_common_bits rca_b1_b7(w_carry[i], Sum[i], A[i], B[i], w_carry[i-1], Cmd[1]);
+    alu_common_bits rca_b1_b7(w_carry[i], Sum[i], A[i], B[i], w_carry[i-1], sub);
 end
 endgenerate
 
 //Create the first bit in the second half of the RCA (needs to be different so we don't carry from first half in the case of
 //padd
-alu_common_bits rca_b8(w_carry[8], Sum[8], A[8], B[8], w_carry[7] & ~Cmd[3], Cmd[1]);
+alu_common_bits rca_b8(w_carry[8], Sum[8], A[8], B[8], w_carry[7] & ~padd, sub);
 
 //Generate the second half of the RCA.
 generate
 for (i=9; i <= 15; i=i+1) begin:au_upper_bitgen
-    alu_common_bits rca_b1_b7(w_carry[i], Sum[i], A[i], B[i], w_carry[i-1], Cmd[1]);
+    alu_common_bits rca_b1_b7(w_carry[i], Sum[i], A[i], B[i], w_carry[i-1], sub);
 end
 endgenerate
 /******         End Generation of RCA           **********/
 
 //Process for overflow from both upper and lower.
-vl check_overflow(v_low,v_high,Sum,A,B,Cmd);
-assign low_v_use = ((v_low & Cmd[3]) | (v_high & ~Cmd[3]));
+vl check_overflow(v_low,v_high,Sum,A,B,sub);
+assign low_v_use = ((v_low & padd) | (v_high & ~padd));
 
 //Logic for detecting if negative.
 assign n_high = (~v_high & Sum[15]) | (v_high & w_carry[15]);
 //Logic for lower bits (Mark negative if bottom is neg and paddsb, else default to n_high)
-assign n_low = (((~v_low & Sum[7]) | (v_low & w_carry[7])) & Cmd[3]) | (~Cmd[3] & n_high);
+assign n_low = (((~v_low & Sum[7]) | (v_low & w_carry[7])) & padd) | (~padd & n_high);
 
 //TESTING PURPOSES
 //assign Result = 16'h0000;
@@ -120,7 +123,7 @@ for (i = 0; i<= 6; i= i+ 1) begin
     assign Result[i] = ~low_v_use ? Sum[i] : ~n_low; 
 end
 
-assign Result[7] = ~low_v_use ? Sum[7] : (n_low & Cmd[3]) | (~n_low & ~Cmd[3]);
+assign Result[7] = ~low_v_use ? Sum[7] : (n_low & padd) | (~n_low & ~padd);
 //Output for the upper bits
 for (i = 8; i<= 14; i= i+ 1) begin
     assign Result[i] = ~low_v_use ? Sum[i] : ~n_high; 

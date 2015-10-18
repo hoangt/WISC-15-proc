@@ -3,10 +3,19 @@
 *   SLL, SRA, SRL
 *
 * */
-module shifter(Result,Cmd,A,B);
+module shifter(Result,Ctrl,A,Imm);
 output [15:0] Result;
-input [15:0] A,B;
-input [3:0] Cmd;
+input [15:0] A;
+input [3:0] Imm;
+input [1:0] Ctrl;
+wire [15:0] Right_out, Left_out;
+
+shift_ll get_left_shift(Left_out, A, Imm);
+shift_r get_right_shifts(Right_out, A, Imm, Ctrl[0]);
+
+//Mux the output of the shifters 
+assign Result = (Ctrl[1]) ? Right_out : Left_out;
+
 endmodule
 
 module shift_ll(Result,A,Imm);
