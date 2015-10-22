@@ -18,16 +18,17 @@ initial pc = 0;
 
 wire [15:0] New_pc; 
 
-reg [15:0] C_imm, B_imm, Inst_imm;
-wire [15:0] instr, Ret_reg;
+reg [15:0] C_imm, B_imm, Inst_imm, Lb_imm;
+wire [15:0] instr, Ret_reg, Imm;
 
 
 //Sign extenders.
-always @(C_imm, B_imm, instr)
+always @(C_imm, B_imm, instr, Lb_imm)
 begin
-    C_imm[15:0] <= {{7{instr[7]}},instr[7:0] } ;//Sign extend values for call.
+    C_imm[15:0] <= {{8{instr[7]}},instr[7:0] } ;//Sign extend values for call.
     B_imm[15:0] <= {{4{instr[11]}},instr[11:0] }; //Sign extend values for branch.
     Inst_imm[15:0] <= {{12{instr[3]}},instr[3:0] }; //Sign extend the 4 bit immediate for input to alu.
+    Lb_imm[15:0] <= {{8{instr[7]}}, instr[7:0]}; //Sign extend the 8 bit immediate for input to the alu on lhb llb.
 end
 
 
@@ -56,7 +57,8 @@ assign rf_dst_addr = (call) ? 4'hf : instr[11:8]; //Mux the input of the write d
 assign rf_dst_in = (call) ? pc + 1 : wb_data; //Mux the input of wb_data and the pc for call
 rf REG_FILE(clk,rf_r1_addr,rf_r2_addr,reg_out_1,reg_out_2,re0,re1,rf_dst_addr,rf_dst_in,reg_wrt,hlt);
 
-assign B_in_alu = (alu_src) ? Inst_imm : reg_out_2;//Mux the alu_src imm and register_rd
+assign Imm = (lhb|llb) ? Lb_imm: Inst_imm; //Mux the lb immediate and normal inst immediate for input to alu.
+assign B_in_alu = (alu_src) ? Imm: reg_out_2;//Mux the alu_src imm and register_rd
 assign A_in_alu = reg_out_1;
 
 //ALU STUFF
