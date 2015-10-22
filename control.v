@@ -113,14 +113,12 @@ always @ (Inst) begin
             reg_wrt <= 1;
             mem_to_reg <= 0;
             call <= 1;
-            branch <= 1;
         end
         4'b1110: //ret
                     begin
             reg_wrt <= 0;
             mem_to_reg <= 1;
             ret <= 1;
-            branch <= 1;
         end
         4'b1111: //hlt
                     begin

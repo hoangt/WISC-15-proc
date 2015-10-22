@@ -13,11 +13,10 @@ output hlt;
 reg z_flag, v_flag, n_flag; 
 
 reg [15:0] pc; //Change to wire.
-reg [15:0] addr = 0; //TODO: Mod.
 wire [15:0] New_pc; 
 
-reg [15:0] C_imm, B_imm, Inst_imm, Ret_reg;
-wire [15:0] instr;
+reg [15:0] C_imm, B_imm, Inst_imm;
+wire [15:0] instr, Ret_reg;
 
 
 //Sign extenders.
@@ -28,14 +27,15 @@ begin
     Inst_imm[15:0] <= {{12{Inst[3]}}, Inst[3:0] }; //Sign extend the 4 bit immediate for input to alu.
 end
 
-//TODO: Set Ret_reg.
-instr_logic pc_in(New_pc, pc, Ret_reg, C_imm, B_imm, Inst[11:9], z_flag, v_flag, n_flag, branch, call, ret, halt);
-//TODO: Take the pc and save on CALL -- Mux the input reg dest, give the pc as data..
 
 
 //Instruction Memory Stuff
-assign rd_en = ~hlt;
-IM instruction_mem(clk,addr,rd_en,instr);
+//Address Calculation.
+assign Ret_reg = reg_out_1; //Grab the input for return addr as reading rs register.
+instr_logic pc_in(New_pc, pc, Ret_reg, C_imm, B_imm, Inst[11:9], z_flag, v_flag, n_flag, branch, call, ret, halt);
+
+assign rd_en =1;// ~hlt;
+IM instruction_mem(clk,pc,rd_en,instr);
 
 //CONTROL UNIT STUFF
 wire [3:0] Alu_Cmd;
@@ -74,18 +74,24 @@ assign mem_wrt_data = reg_out_2;
 DM Data_Mem(clk,mem_addr,re,we, mem_wrt_data,mem_rd_data);
 assign wb_data = (mem_to_reg) ? mem_rd_data : Alu_result;//Mux the outputs of Data memory and the alu for wb to reg file
 
-always @ (rst_n, posedge clk) 
+always @ (rst_n, clk) 
+begin
+    if (clk) 
     begin
         pc <= New_pc;
+        //$display("pc: in cpu %d", pc);
+
         //Set the flags (if signaled)
-        if (set_zero)
-            z_flag <= alu_z;
-        if (set_over) begin
-            v_flag <= alu_v;
-            n_flag <= alu_n;
-        end
-        if (rst_n)
-            pc <= 0;
+            if (set_zero)
+                z_flag <= alu_z;
+            if (set_over) 
+            begin
+                v_flag <= alu_v;
+                n_flag <= alu_n;
+            end
     end
+        if (~rst_n)
+            pc <= 0;
+end
 
 endmodule
