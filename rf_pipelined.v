@@ -25,13 +25,18 @@ reg [3:0] dst_addr_lat;					// have to capture dst_addr from previous cycle
 reg [15:0] dst_lat;					// have to capture write data from previous cycle
 reg we_lat;						// have to capture we from previous cycle
 */
-
+integer i;
 //////////////////////////////////////////////////////////
 // Register file will come up uninitialized except for //
 // register zero which is hardwired to be zero.       //
 ///////////////////////////////////////////////////////
 initial begin
   mem[0] = 16'h0000;					// reg0 is always 0,
+  //TODO: INITIAL RF
+  for (i = 0; i <=15; i = i +1)
+      mem[i] = 16'h0000;
+  mem[1] = 3;
+  mem[3] = 6;
 end
 
 /*
