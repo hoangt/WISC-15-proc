@@ -17,9 +17,7 @@ initial begin
   @(negedge clk);
   rst_n = 1;
   $display("rst deassert\n");
-  $display("pc:%d", pc);
   @(posedge clk);
-  $display("pc:%d", pc);
 end 
   
 always

@@ -10,9 +10,12 @@ input clk, rst_n;
 output [15:0] pc;
 output hlt;
 
+assign hlt = halt;
 reg z_flag, v_flag, n_flag; 
 
-reg [15:0] pc; //Change to wire.
+reg [15:0] pc; 
+initial pc = 0;
+
 wire [15:0] New_pc; 
 
 reg [15:0] C_imm, B_imm, Inst_imm;
@@ -28,11 +31,10 @@ begin
 end
 
 
-
 //Instruction Memory Stuff
 //Address Calculation.
 assign Ret_reg = reg_out_1; //Grab the input for return addr as reading rs register.
-instr_logic pc_in(New_pc, pc, Ret_reg, C_imm, B_imm, Inst[11:9], z_flag, v_flag, n_flag, branch, call, ret, halt);
+instr_logic pc_calc(New_pc, pc, Ret_reg, C_imm, B_imm, Inst[11:9], z_flag, v_flag, n_flag, branch, call, ret, halt);
 
 assign rd_en =1;// ~hlt;
 IM instruction_mem(clk,pc,rd_en,instr);
@@ -40,7 +42,7 @@ IM instruction_mem(clk,pc,rd_en,instr);
 //CONTROL UNIT STUFF
 wire [3:0] Alu_Cmd;
 wire reg_wrt, mem_to_reg, mem_wrt, branch, halt, set_over, set_zero, call, ret, alu_src;
-control_unit CU(Alu_Cmd, alu_src, reg_wrt, mem_to_reg, mem_wrt, branch, call, ret, halt, set_over, set_zero, inst[15:12]);
+control_unit control(Alu_Cmd, alu_src, reg_wrt, mem_to_reg, mem_wrt, branch, call, ret, halt, set_over, set_zero, instr[15:12]);
 
 //Register File Stuff
 wire [3:0] rf_r1_addr, rf_r2_addr; //Register read inputs.
@@ -74,13 +76,35 @@ assign mem_wrt_data = reg_out_2;
 DM Data_Mem(clk,mem_addr,re,we, mem_wrt_data,mem_rd_data);
 assign wb_data = (mem_to_reg) ? mem_rd_data : Alu_result;//Mux the outputs of Data memory and the alu for wb to reg file
 
-always @ (rst_n, clk) 
+//always @ (rst_n, clk) 
+//begin
+//    if (clk) 
+//    begin
+//        pc <= New_pc;
+//        //$display("pc: in cpu %d", pc);
+//
+//        //Set the flags (if signaled)
+//            if (set_zero)
+//                z_flag <= alu_z;
+//            if (set_over) 
+//            begin
+//                v_flag <= alu_v;
+//                n_flag <= alu_n;
+//            end
+//    end
+//        if (~rst_n)
+//            pc <= 0;
+//end
+always @ (rst_n, posedge clk) 
 begin
-    if (clk) 
-    begin
-        pc <= New_pc;
-        //$display("pc: in cpu %d", pc);
+            if (!rst_n)
+                pc <= 0;
+            else
+                pc <= New_pc;
+end
 
+always @ (set_zero,set_over,n_flag,v_flag,z_flag,alu_z,alu_n,alu_v)
+begin
         //Set the flags (if signaled)
             if (set_zero)
                 z_flag <= alu_z;
@@ -89,9 +113,7 @@ begin
                 v_flag <= alu_v;
                 n_flag <= alu_n;
             end
-    end
-        if (~rst_n)
-            pc <= 0;
 end
+
 
 endmodule
