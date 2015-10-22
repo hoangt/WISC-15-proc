@@ -51,7 +51,7 @@ wire [15:0] rf_dst_in; //The register write data.
 assign rf_r1_addr = Inst[7:4]; //REGISTER TO READ 1
 assign rf_r2_addr = Inst[3:0]; //REGISTER TO READ 2
 assign rf_dst_addr = (call) ? 4'hf : Inst[11:8]; //Mux the input of the write destination register.
-assign rf_dst_in = (call) ? pc + 1 : wb_data;
+assign rf_dst_in = (call) ? pc + 1 : wb_data; //Mux the input of wb_data and the pc for call
 rf REG_FILE(clk,rf_r1_addr,rf_r2_addr,reg_out_1,reg_out_2,re0,re1,rf_dst_addr,rf_dst_in,reg_wrt,hlt);
 
 assign B_in_alu = (alu_src) ? Inst_imm : reg_out_2;//Mux the alu_src imm and register_rd
