@@ -1,9 +1,9 @@
-module control_unit(Alu_Cmd, reg_wrt, mem_to_reg, mem_wrt, branch, halt, set_over, set_zero, Inst);
+module control_unit(Alu_Cmd, alu_src, reg_wrt, mem_to_reg, mem_wrt, branch, call, ret, halt, set_over, set_zero, Inst);
 output [3:0] Alu_Cmd;
-output reg_wrt, mem_to_reg, mem_wrt, branch, halt, set_over, set_zero;
+output reg_wrt, mem_to_reg, mem_wrt, branch, halt, set_over, set_zero, call, ret, alu_src;
 input [3:0] Inst;
 
-reg reg_wrt, mem_to_reg, mem_wrt, branch, halt, set_over, set_zero;
+reg reg_wrt, mem_to_reg, mem_wrt, branch, halt, set_over, set_zero, call, ret, alu_src;
 reg Alu_Cmd;
 
 always @ (Inst) begin
@@ -14,6 +14,9 @@ always @ (Inst) begin
     set_zero <= 0;
     set_over <= 0;
     Alu_Cmd <= 4'b0000;
+    call <= 0;
+    ret <= 0;
+    alu_src <= 0;
 
     case(Inst)
         4'b0000: //ADD
@@ -58,6 +61,7 @@ always @ (Inst) begin
             mem_to_reg <= 0;
             set_zero <= 1;
             Alu_Cmd <= 4'b1100;
+            alu_src <= 1;
         end
         4'b0110: //srl
             begin
@@ -65,6 +69,7 @@ always @ (Inst) begin
             mem_to_reg <= 0;
             set_zero <= 1;
             Alu_Cmd <= 4'b1110;
+            alu_src <= 1;
         end
         4'b0111: //sra
                     begin
@@ -72,17 +77,20 @@ always @ (Inst) begin
             mem_to_reg <= 0;
             set_zero <= 1;
             Alu_Cmd <= 4'b1111;
+            alu_src <= 1;
         end
         4'b1000: //lw
          begin
             reg_wrt <= 1;
             mem_to_reg <= 1;
+            alu_src <= 1;
         end
         4'b1001: //sw
                     begin
             reg_wrt <= 0;
             mem_to_reg <= 1;
             mem_wrt <= 1;
+            alu_src <= 1;
         end
         4'b1010: //lhb
                     begin
@@ -104,12 +112,14 @@ always @ (Inst) begin
                     begin
             reg_wrt <= 1;
             mem_to_reg <= 0;
+            call <= 1;
             branch <= 1;
         end
         4'b1110: //ret
                     begin
             reg_wrt <= 0;
             mem_to_reg <= 1;
+            ret <= 1;
             branch <= 1;
         end
         4'b1111: //hlt
@@ -119,8 +129,5 @@ always @ (Inst) begin
             halt <= 1;
         end
     endcase
-
-
 end
-
 endmodule

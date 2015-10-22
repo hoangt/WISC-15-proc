@@ -1,3 +1,7 @@
+`include "alu/shifter.v"
+`include "alu/au.v"
+`include "alu/full_adder.v"
+
 /*
     * Control Signals as follows:
     * 00xx => Take AU Output

@@ -1,4 +1,3 @@
-`include "full_adder.v"
 
 /*
 * List of Modules within alu.v:;
