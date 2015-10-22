@@ -41,8 +41,8 @@ IM instruction_mem(clk,pc,rd_en,instr);
 
 //CONTROL UNIT STUFF
 wire [3:0] Alu_Cmd;
-wire reg_wrt, mem_to_reg, mem_wrt, branch, halt, set_over, set_zero, call, ret, alu_src;
-control_unit control(Alu_Cmd, alu_src, reg_wrt, mem_to_reg, mem_wrt, branch, call, ret, halt, set_over, set_zero, instr[15:12]);
+wire reg_wrt, mem_to_reg, mem_wrt, branch, halt, set_over, set_zero, call, ret, alu_src, llb, lhb;
+control_unit control(Alu_Cmd, alu_src, reg_wrt, mem_to_reg, mem_wrt, branch, call, ret, halt, set_over, set_zero,llb,lhb, instr[15:12]);
 
 //Register File Stuff
 wire [3:0] rf_r1_addr, rf_r2_addr; //Register read inputs.
@@ -50,7 +50,7 @@ assign re0 = 1;  assign re1 = 1; //Set both registers to read perminentaly.
 wire [15:0] reg_out_1, reg_out_2; //The register outputs.
 wire [3:0] rf_dst_addr; //The register write address.
 wire [15:0] rf_dst_in; //The register write data.
-assign rf_r1_addr = instr[7:4]; //REGISTER TO READ 1
+assign rf_r1_addr = (lhb) ? instr [11:8] : instr[7:4]; //REGISTER TO READ 1 in lhb use rd as src.
 assign rf_r2_addr = instr[3:0]; //REGISTER TO READ 2
 assign rf_dst_addr = (call) ? 4'hf : instr[11:8]; //Mux the input of the write destination register.
 assign rf_dst_in = (call) ? pc + 1 : wb_data; //Mux the input of wb_data and the pc for call
@@ -63,7 +63,7 @@ assign A_in_alu = reg_out_1;
 wire [15:0] Alu_result;
 wire alu_v, alu_n, alu_z;
 wire [15:0] A_in_alu, B_in_alu; 
-alu ALU(Alu_result, alu_v, alu_n, alu_z, A_in_alu, B_in_alu, Alu_Cmd);
+alu ALU(Alu_result, alu_v, alu_n, alu_z, A_in_alu, B_in_alu, Alu_Cmd, llb, lhb);
 assign mem_addr = Alu_result;
 
 

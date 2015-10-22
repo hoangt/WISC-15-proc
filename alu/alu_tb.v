@@ -4,20 +4,20 @@ reg [3:0] Alu_Ctrl; //The Alu_Control Signals
 wire [16:0] Result; //Result of alu
 wire z,n,v; //Flags output.
 
-alu iDUT(Result[15:0], v, n, z, A[15:0], B[15:0], Alu_Ctrl);
+alu iDUT(Result[15:0], v, n, z, A[15:0], B[15:0], Alu_Ctrl, 0, 0);
 assign Result[16] = 0; //Make the garbage bit auto 0
 
 initial begin
     //TEST ADD
-    Alu_Ctrl = 4'b0000;
-    for (A = 0; A < (1<<15); A = A+31) begin
-        for (B = 0; B < (1<<15); B = B+73) begin
-            #1
-            if (Result != (A+B))
-                $display("BAD ADD, A:%h B%h Result:%b Expected:%h", A, B, Result, A+B);
-                $display("BAD ADD, A:%h B%h Result:%b Expected:%h, v:%b, n:%b z:%b", A, B, Result, A+B, v,n,z);
-        end
-    end
+    //Alu_Ctrl = 4'b0000;
+    //for (A = 0; A < (1<<15); A = A+31) begin
+    //    for (B = 0; B < (1<<15); B = B+73) begin
+    //        #1
+    //        if (Result != (A+B))
+    //            $display("BAD ADD, A:%h B%h Result:%b Expected:%h", A, B, Result, A+B);
+    //            //$display("BAD ADD, A:%h B%h Result:%b Expected:%h, v:%b, n:%b z:%b", A, B, Result, A+B, v,n,z);
+    //    end
+    //end
 
     //TEST XOR
     //Alu_Ctrl = 4'b1000;

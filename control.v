@@ -1,9 +1,9 @@
-module control_unit(Alu_Cmd, alu_src, reg_wrt, mem_to_reg, mem_wrt, branch, call, ret, halt, set_over, set_zero, Inst);
+module control_unit(Alu_Cmd, alu_src, reg_wrt, mem_to_reg, mem_wrt, branch, call, ret, halt, set_over, set_zero,llb,lhb, Inst);
 output [3:0] Alu_Cmd;
-output reg_wrt, mem_to_reg, mem_wrt, branch, halt, set_over, set_zero, call, ret, alu_src;
+output reg_wrt, mem_to_reg, mem_wrt, branch, halt, set_over, set_zero, call, ret, alu_src, llb, lhb;
 input [3:0] Inst;
 
-reg reg_wrt, mem_to_reg, mem_wrt, branch, halt, set_over, set_zero, call, ret, alu_src;
+reg reg_wrt, mem_to_reg, mem_wrt, branch, halt, set_over, set_zero, call, ret, alu_src, llb, lhb;
 reg Alu_Cmd;
 
 always @ (Inst) begin
@@ -17,6 +17,8 @@ always @ (Inst) begin
     call <= 0;
     ret <= 0;
     alu_src <= 0;
+    lhb <= 0;
+    llb <= 0;
 
     case(Inst)
         4'b0000: //ADD
@@ -96,11 +98,13 @@ always @ (Inst) begin
                     begin
             reg_wrt <= 1;
             mem_to_reg <= 0;
+            lhb <= 1;
         end
         4'b1011: //llb
                     begin
             reg_wrt <= 1;
             mem_to_reg <= 0;
+            llb <= 1;
         end
         4'b1100: //b
                     begin
