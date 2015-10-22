@@ -16,7 +16,7 @@ always @(addr,rd_en,clk)
     instr <= instr_mem[addr];
 
 initial begin
-  $readmemh("instr.hex",instr_mem);
+  $readmemh("test_progs_hex/LwStall.hex",instr_mem);
 end
 
 endmodule

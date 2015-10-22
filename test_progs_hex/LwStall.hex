@@ -1,0 +1,19 @@
+@0000 BE06 //llb
+@0001 B106 //llb
+@0002 2211 //sub
+@0003 92E1 //sw
+@0004 83E1 //lw
+@0005 0B13 //add
+@0006 1AB1 //paddsb
+
+@0008 F000 //hlt
+
+//llb  R14, 0x06          #R14 <= 0x0006
+//llb  R1, 0x06           #R1 <= 0x0006^M
+//sub  R2, R1, R1         #R2 <= 0x0000               //Forwarding R1 from llb^M
+//sw   R2, R14, 0x1       #mem[7] <= 0x0000           ^M
+//lw   R3, R14, 0x1       #R3 <= mem[7] == 0x0000         //forwarding from sw^M
+//add  R11, R1, R3        #R11 <= 0x0006              //load-use 1 cycle stall - Forwarding R3 from lw
+//paddsb R10, R11, R1     #R10 <= 0x000c              //Forwarding R15 from add^M
+//
+//hlt^M

@@ -1,0 +1,9 @@
+llb  R14, 0x06			#R14 <= 0x0006
+llb  R1, 0x06			#R1 <= 0x0006
+sub  R2, R1, R1 		#R2 <= 0x0000				//Forwarding R1 from llb
+sw   R2, R14, 0x1		#mem[7] <= 0x0000			
+lw   R3, R14, 0x1		#R3 <= mem[7] == 0x0000			//forwarding from sw
+add  R11, R1, R3		#R11 <= 0x0006				//load-use 1 cycle stall - Forwarding R3 from lw
+paddsb R10, R11, R1		#R10 <= 0x000c				//Forwarding R15 from add
+
+hlt
