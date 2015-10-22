@@ -98,12 +98,14 @@ always @ (Inst) begin
                     begin
             reg_wrt <= 1;
             mem_to_reg <= 0;
+            alu_src <= 1;
             lhb <= 1;
         end
         4'b1011: //llb
                     begin
             reg_wrt <= 1;
             mem_to_reg <= 0;
+            alu_src <= 1;
             llb <= 1;
         end
         4'b1100: //b

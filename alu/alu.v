@@ -45,7 +45,7 @@ function [15:0] Mux_15b_4t1;
         if (llb)
             Mux_15b_4t1 = B;
         else if (lhb)
-            Mux_15b_4t1 = {A[15:8], B[7:0]}; //TODO: Make A come from the RD
+            Mux_15b_4t1 = {A[15:8], B[7:0]}; 
         else begin
     case (Sel) 
         2'b00: 
