@@ -1,0 +1,53 @@
+@0000 B122
+@0001 A100
+@0002 B211
+@0003 A200
+@0004 2021
+@0005 C206 //B FAIL
+@0006 C601 //B ARND
+@0007 CE04 //B FAIl
+@0008 B000 //ARND:
+@0009 A000
+@000A C201 //B FAIL
+@000B CE02 //B PASS
+@000C BAFF //FAIL:
+@000D AAFF 
+@000E BBAA //PASS:
+@000F ABAA 
+@0010 F000
+
+
+//        LLB R1, 0x22        # R1 = 0xxx22
+//        LHB R1, 0x00        # R1 = 0x0022
+//
+//        LLB R2, 0x11        # R2 = 0xxx11
+//        LHB R2, 0x00        # R2 = 0x0011
+//
+//        SUB R0, R2, R1      # This should clear the z flag, and set N flag
+//
+//        B   EQ, FAIL
+//
+//        B   LT, ARND
+//
+//        B   UNCOND, FAIL    # unconditional branch, ccc=111
+//
+//
+//ARND:       LLB R0, 0x00        # This should not set the Z flag
+//        LHB R0, 0x00        # This should not set the Z flag
+//
+//        B   EQ, FAIL
+//
+//        B   UNCOND, PASS    # unconditional branch, ccc=111
+//
+//        
+//
+//FAIL:       LLB R10, 0xFF       # R10 will contain 0xxxFF
+//        LHB R10, 0xFF       # R10 will contain 0xFFFF (indicates failure)           HLT
+//
+//        
+//
+//PASS:       LLB R11, 0xAA       # R11 will contain 0xxxAA
+//
+//        LHB R11, 0xAA       # R11 will contain 0xAAAA (indicated pass)
+//
+//        HLT

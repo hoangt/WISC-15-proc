@@ -65,7 +65,7 @@ always @ *//(In_pc,Cond,z,v,n,branch,call,ret,halt,B_imm,C_imm,Ret_reg)
             Out_pc <= In_pc;
         else
             Out_pc <= In_pc + 1;
-        $display("Out_pc:%h",Out_pc);
+        //$display("Out_pc:%h",Out_pc);
     end
 
 endmodule

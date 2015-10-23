@@ -57,7 +57,7 @@ wire [3:0] bypass;
 assign rf_r1_addr = (lhb) ? instr [11:8] : instr[7:4]; //REGISTER TO READ 1 in lhb use rd as src.
 assign rf_r2_addr = (mem_wrt) ? instr[11:8] : instr[3:0]; //REGISTER TO READ 2
 assign rf_dst_addr = (call) ? 4'hf : instr[11:8]; //Mux the input of the write destination register.
-assign rf_dst_in = (call) ? call_pc : wb_data; //Mux the input of wb_data and the pc for call
+assign rf_dst_in = (call) ? call_pc: wb_data; //Mux the input of wb_data and the pc for call
 rf REG_FILE(clk,rf_r1_addr,rf_r2_addr,reg_out_1,reg_out_2,re0,re1,rf_dst_addr,rf_dst_in,reg_wrt,hlt);
 
 assign Imm = (lhb|llb) ? Lb_imm: Inst_imm; //Mux the lb immediate and normal inst immediate for input to alu.
@@ -121,7 +121,7 @@ begin
     //    $display("rf_r1_addr:%h rf_dst_addr:%h reg_wrt:%b",rf_r1_addr,rf_dst_addr, reg_wrt);
             //if (pc >= 10)
                 //$display(" oops");
-            $display("pc:%h", pc);
+            //$display("pc:%h", pc);
             //$display("OP:%h WE:%b ctrl_mem_wrt:%b mem_adder:%d mem_data_in:%d mem_rd_data:%d", instr, we, mem_wrt, mem_addr, mem_wrt_data, mem_rd_data);
             //$display("OP:%h REG_RD_1:%h REG_RD_2:%h ALURESULT:%h WBDATA:%d", instr, reg_out_1, reg_out_2, Alu_result, wb_data);
             //
