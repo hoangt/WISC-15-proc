@@ -16,10 +16,16 @@ always @(addr,rd_en,clk)
     instr <= instr_mem[addr];
 
 initial begin
-  //$readmemh("test_progs_hex/LwStall.hex",instr_mem);
-  //$readmemh("test_progs_hex/Loop.hex",instr_mem);
+    //COMP
+  //$readmemh("test_progs_hex/instr.hex",instr_mem);
   //$readmemh("test_progs_hex/Control.hex",instr_mem);
-  $readmemh("test_progs_hex/DataDependence.hex",instr_mem);
+  
+  //TODO
+  $readmemh("test_progs_hex/LwStall.hex",instr_mem);
+  //$readmemh("test_progs_hex/Loop.hex",instr_mem);
+  //$readmemh("test_progs_hex/DataDependence.hex",instr_mem);
+  //$readmemh("test_progs_hex/BasicOp.hex",instr_mem);
+  
 end
 
 endmodule

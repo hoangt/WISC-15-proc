@@ -19,6 +19,7 @@ initial pc = 0;
 wire [15:0] New_pc; 
 
 reg [15:0] C_imm, B_imm, Inst_imm, Lb_imm;
+reg [15:0] call_pc;
 wire [15:0] instr, Ret_reg, Imm;
 
 
@@ -29,6 +30,7 @@ begin
     B_imm[15:0] <= {{7{instr[8]}},instr[8:0] }; //Sign extend values for branch.
     Inst_imm[15:0] <= {{12{instr[3]}},instr[3:0] }; //Sign extend the 4 bit immediate for input to alu.
     Lb_imm[15:0] <= {{8{instr[7]}}, instr[7:0]}; //Sign extend the 8 bit immediate for input to the alu on lhb llb.
+    call_pc <= pc + 1;
 end
 
 
@@ -51,10 +53,12 @@ assign re0 = 1;  assign re1 = 1; //Set both registers to read perminentaly.
 wire [15:0] reg_out_1, reg_out_2; //The register outputs.
 wire [3:0] rf_dst_addr; //The register write address.
 wire [15:0] rf_dst_in; //The register write data.
-assign rf_r1_addr = (lhb|mem_wrt) ? instr [11:8] : instr[7:4]; //REGISTER TO READ 1 in lhb use rd as src.
+wire [3:0] bypass;
+assign bypass = (!mem_wrt&&mem_to_reg) ? instr[3:0] : instr[7:4];
+assign rf_r1_addr = (lhb|mem_wrt) ? instr [11:8] : bypass; //REGISTER TO READ 1 in lhb use rd as src.
 assign rf_r2_addr = instr[3:0]; //REGISTER TO READ 2
 assign rf_dst_addr = (call) ? 4'hf : instr[11:8]; //Mux the input of the write destination register.
-assign rf_dst_in = (call) ? pc + 1 : wb_data; //Mux the input of wb_data and the pc for call
+assign rf_dst_in = (call) ? call_pc : wb_data; //Mux the input of wb_data and the pc for call
 rf REG_FILE(clk,rf_r1_addr,rf_r2_addr,reg_out_1,reg_out_2,re0,re1,rf_dst_addr,rf_dst_in,reg_wrt,hlt);
 
 assign Imm = (lhb|llb) ? Lb_imm: Inst_imm; //Mux the lb immediate and normal inst immediate for input to alu.
@@ -104,19 +108,27 @@ begin
                 pc <= 0;
             else
                 pc <= New_pc;
-            if (pc >= 100)
-                $finish();
+            //if(pc >= 16'h001A)
+            //    $finish();
+            //$display("New_pc:%h", branch);
 end
 
 always @ (posedge clk)
 begin
+    //TEST CALL
+    //if(call)
+    //    $display("rf_dst_in:%h rf_dst_addr:%h reg_wrt:%b",rf_dst_in,rf_dst_addr, reg_wrt);
+    //if (ret)
+    //    $display("rf_r1_addr:%h rf_dst_addr:%h reg_wrt:%b",rf_r1_addr,rf_dst_addr, reg_wrt);
             //if (pc >= 10)
                 //$display(" oops");
-            $display("pc:%d", pc);
-            $display("OP:%h WE:%b ctrl_mem_wrt:%b mem_adder:%d mem_data_in:%d mem_rd_data:%d", instr, we, mem_wrt, mem_addr, mem_wrt_data, mem_rd_data);
+            $display("pc:%h", pc);
+            //$display("OP:%h WE:%b ctrl_mem_wrt:%b mem_adder:%d mem_data_in:%d mem_rd_data:%d", instr, we, mem_wrt, mem_addr, mem_wrt_data, mem_rd_data);
             $display("OP:%h REG_RD_1:%h REG_RD_2:%h ALURESULT:%h WBDATA:%d", instr, reg_out_1, reg_out_2, Alu_result, wb_data);
+            //
             //$display("lb_imm%d, lhb:%b llb:%b, Imm%d", Lb_imm, lhb, llb, Imm);
-            //$display("OP:%h ALU IN A:%d ALU IN B:%d RESULT:%h, ALU_CMD:%b", instr, A_in_alu, B_in_alu, Alu_result, Alu_Cmd);
+            //
+            $display("OP:%h ALU IN A:%d ALU IN B:%d RESULT:%h, ALU_CMD:%b", instr, A_in_alu, B_in_alu, Alu_result, Alu_Cmd);
 end
 
 always @ (set_zero,set_over,n_flag,v_flag,z_flag,alu_z,alu_n,alu_v)

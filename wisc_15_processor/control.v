@@ -29,19 +29,19 @@ always @ (Inst) begin
             set_zero <= 1;
             Alu_Cmd <= 4'b0000;
         end
-        4'b0001: //sub
+        4'b0001: //Paddsb
+         begin
+            reg_wrt <= 1;
+            mem_to_reg <= 0;
+            Alu_Cmd <= 4'b0010;
+        end
+        4'b0010: //sub
           begin
             reg_wrt <= 1;
             mem_to_reg <= 0;
             set_over <= 1;
             set_zero <= 1;
             Alu_Cmd <= 4'b0001;
-        end
-        4'b0010: //Paddsb
-         begin
-            reg_wrt <= 1;
-            mem_to_reg <= 0;
-            Alu_Cmd <= 4'b0010;
         end
         4'b0011: //nand
            begin

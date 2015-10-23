@@ -5,13 +5,13 @@ input [15:0] In_pc, Ret_reg, C_imm, B_imm;
 input [2:0] Cond;
 input z, v, n, branch, call, ret, halt;
 
-reg [15:0] branch_adder;
+wire [15:0] branch_adder;
 reg [15:0] Out_pc;
+assign branch_adder = In_pc + 1 + B_imm; //TODO: For some reaon add doesn't work for neg.
 
-always @ (In_pc, Out_pc, Cond,z,v,n,branch) 
+always @ (In_pc,Cond,z,v,n,branch,call,ret,halt,B_imm,C_imm,Ret_reg) 
     begin
         //Calculate the branch address.
-        branch_adder <= In_pc + 1 + B_imm; //TODO: For some reaon add doesn't work for neg.
         //$display("b_adder:%d In_pc:%d B_imm:%d zflag:%b", branch_adder, In_pc, B_imm,z);
         if (branch) begin
             //Out_pc <= In_pc + 1; //Fail of b condition means just increment pc.
@@ -51,18 +51,21 @@ always @ (In_pc, Out_pc, Cond,z,v,n,branch)
                         Out_pc <= branch_adder;
                     else
                         Out_pc <= In_pc + 1; //Fail of b condition means just increment pc.
-                3'b111: //Unconditional
+                    3'b111: //Unconditional
                     Out_pc <= branch_adder;
             endcase
         end
         else if (call)
             Out_pc <= In_pc + 1 + C_imm;
-        else if (ret)
+        else if (ret) begin
+            //$display("RETREG%h",Ret_reg);
             Out_pc <= Ret_reg;
+        end
         else if (halt)
             Out_pc <= In_pc;
         else
             Out_pc <= In_pc + 1;
+        //$display("Out_pc:%h",Out_pc);
     end
 
 endmodule

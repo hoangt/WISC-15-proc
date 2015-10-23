@@ -112,6 +112,7 @@ alu_common_bits rca_b15(w_carry[15], Sum[15], A[15], B[15], w_carry[14], sub);
 vl check_overflow(v_low,v_high,Sum,A,B,sub);
 assign low_v_use = ((v_low & padd) | (v_high & ~padd));
 
+//TODO: MAKE PADD WORK.
 //Logic for detecting if negative.
 assign n_high = (~v_high & Sum[15]) | (v_high & w_carry[15]);
 //Logic for lower bits (Mark negative if bottom is neg and paddsb, else default to n_high)
@@ -124,11 +125,11 @@ assign n_low = (((~v_low & Sum[7]) | (v_low & w_carry[7])) & padd) | (~padd & n_
 //assign Result[15:1] = 15'hffff;
 //assign Result = Sum;
 
-//TODO/BUG: Fix v_high. and v_low detection.
 //assign low_v_use = 0;
 
-//overflow_detect v_h_d(v_high, A[15], B[15], Sum[15]);
 //assign v_high = 0;
+//assign v_low = 1;
+//overflow_detect v_h_d(v_high, A[15], B[15], Sum[15]);
 
 
 //assign Result = Sum;
@@ -142,7 +143,7 @@ end
 assign Result[7] = ~low_v_use ? Sum[7] : (n_low & padd) | (~n_low & ~padd);
 //Output for the upper bits
 for (i = 8; i<= 14; i= i+ 1) begin
-    assign Result[i] = (~low_v_use) ? Sum[i] : ~n_high; 
+    assign Result[i] = (~v_high) ? Sum[i] : ~n_high; 
 end
 assign Result[15] = (~v_high) ? Sum[15] : n_high;  
 

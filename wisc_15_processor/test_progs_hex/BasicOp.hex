@@ -1,0 +1,69 @@
+@0000 B100 //LLB
+@0001 A101 //LHB
+@0002 B2FF //LLB
+@0003 A27F //LHB
+@0004 2011 //SUB
+@0005 0312 //ADD
+@0006 3412 //NAND
+@0007 4512 //XOR
+@0008 1601 //PADDSB
+@0009 B180 //LLB
+@000A A101 //LHB
+@000B 1712 //PADDSB
+@000C 7844 //SRA
+@000D 6944 //SRL
+@000E 5A44 //SLL
+@000F 9A05 //SW
+@0010 8B05 //LW
+@0011 D004 //CALL FUNC
+@0012 CE03 //B UNCOND: PASS 
+@0013 B1FF //LLB
+@0014 A1FF //LHB
+@0015 F000 //PASS:HLT
+@0016 B1AA //FUNC:LLB
+@0017 A1AA //LHB
+@0018 E0F0 //RET
+@0019 B1FF //FAIL:LLB
+@001A A1FF //LHB
+    
+//    LLB R1, 0x00
+//    LHB R1, 0x01        # R1=0x0100
+//    LLB R2, 0xFF
+//    LHB R2, 0x7F        # R2=0x7FFF
+//    SUB R0, R1, R1      # R0=0x0000
+//    ADD R3, R1, R2      # R3=0x7FFF
+//
+//    NAND R4, R1, R2     # R4=0xFEFF
+//    XOR  R5, R1, R2     # R5=0x7EFF
+//
+//    PADDSB R6, R0, R1   # R6=0x0100
+//    LLB R1, 0x80        # R1=0xFF80
+//    LHB R1, 0x01        # R1=0x0180
+//    PADDSB R7, R1, R2   # R7=0x7F80
+//
+//    SRA R8, R4, 0x4     # R8=0xFFEF
+//    SRL R9, R4, 0x4     # R9=0x0FEF
+//    SLL R10, R4, 0x4    # R10=0xEFF0
+//
+//    SW  R10, R0, 0x5    # mem[5]=0xEFF0
+//    LW  R11, R0, 0x5    # R11=0xEFF0
+//
+//    CALL FUNC
+//
+//    B UNCOND, PASS
+//
+//    LLB R1, 0xFF
+//    LHB R1, 0xFF
+//
+//
+//
+//PASS:   HLT
+//
+//
+//FUNC:   LLB R1, 0xAA
+//    LHB R1, 0xAA
+//    RET
+//
+//
+//FAIL:   LLB R1, 0xFF
+//    LHB R1, 0xFF
