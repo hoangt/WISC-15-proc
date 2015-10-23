@@ -1,0 +1,18 @@
+@0000 B100 //LLB
+@0001 A102 //LHB
+@0002 B201 //LLB
+@0003 A200 //LHB
+@0004 2112 //SUB
+@0005 C1FE //BNEQ
+@0006 F000 //HLT
+
+//    LLB R1, 0x00
+//    LHB R1, 0x02        # R1=0x0200
+//    LLB R2, 0x01
+//    LHB R2, 0x00        # R2=0x0001
+//
+//
+//Repeat: SUB R1, R1, R2
+//    B   NEQ, Repeat
+//
+//    HLT
