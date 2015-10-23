@@ -25,8 +25,8 @@ wire [15:0] instr, Ret_reg, Imm;
 //Sign extenders.
 always @(C_imm, B_imm, instr, Lb_imm)
 begin
-    C_imm[15:0] <= {{8{instr[7]}},instr[7:0] } ;//Sign extend values for call.
-    B_imm[15:0] <= {{4{instr[11]}},instr[11:0] }; //Sign extend values for branch.
+    C_imm[15:0] <= {{4{instr[11]}},instr[11:0] } ;//Sign extend values for call.
+    B_imm[15:0] <= {{7{instr[8]}},instr[8:0] }; //Sign extend values for branch.
     Inst_imm[15:0] <= {{12{instr[3]}},instr[3:0] }; //Sign extend the 4 bit immediate for input to alu.
     Lb_imm[15:0] <= {{8{instr[7]}}, instr[7:0]}; //Sign extend the 8 bit immediate for input to the alu on lhb llb.
 end
@@ -106,12 +106,15 @@ begin
                 pc <= New_pc;
 end
 
-always @ (clk)
+always @ (posedge clk)
 begin
-            $display("OP:%h WE:%b ctrl_mem_wrt:%b mem_data_in:%d", instr, we, mem_wrt, mem_wrt_data);
+            //if (pc >= 10)
+                //$display(" oops");
+            $display("pc:%d", pc);
+            //$display("OP:%h WE:%b ctrl_mem_wrt:%b mem_data_in:%d", instr, we, mem_wrt, mem_wrt_data);
             //$display("OP:%h REG_RD_1:%h REG_RD_2:%h ALURESULT:%h WBDATA:%d", instr, reg_out_1, reg_out_2, Alu_result, wb_data);
             //$display("lb_imm%d, lhb:%b llb:%b, Imm%d", Lb_imm, lhb, llb, Imm);
-            //$display("OP:%h ALU IN A:%d ALU IN B:%d ALUCMD:%b", instr, A_in_alu, B_in_alu, Alu_Cmd);
+            //$display("OP:%h ALU IN A:%d ALU IN B:%d RESULT:%h", instr, A_in_alu, B_in_alu, Alu_result);
 end
 
 always @ (set_zero,set_over,n_flag,v_flag,z_flag,alu_z,alu_n,alu_v)
