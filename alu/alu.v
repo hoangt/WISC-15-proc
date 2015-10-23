@@ -33,7 +33,7 @@ assign Xor_out = A ^ B;
 
 //Function Muxes the inputs of the various alu devices (adder,nand,xor,shifter)
 assign Result = Mux_15b_4t1(Add_out, Nand_out, Xor_out, Shift_out, A, B, Alu_ctrl[3:2], llb, lhb);
-assign z = ~(|A);
+assign z = ~(|Result);
 //assign Result = Add_out;//Add_out;
 function [15:0] Mux_15b_4t1;
     input [15:0] Add_out, Nand_out, Xor_out, Shift_out, A, B;
@@ -45,7 +45,7 @@ function [15:0] Mux_15b_4t1;
         if (llb)
             Mux_15b_4t1 = B;
         else if (lhb)
-            Mux_15b_4t1 = {A[15:8], B[7:0]}; 
+            Mux_15b_4t1 = {B[15:8], A[7:0]}; 
         else begin
     case (Sel) 
         2'b00: 
