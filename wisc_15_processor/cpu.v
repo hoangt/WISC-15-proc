@@ -30,7 +30,7 @@ begin
     B_imm[15:0] <= {{7{instr[8]}},instr[8:0] }; //Sign extend values for branch.
     Inst_imm[15:0] <= {{12{instr[3]}},instr[3:0] }; //Sign extend the 4 bit immediate for input to alu.
     Lb_imm[15:0] <= {{8{instr[7]}}, instr[7:0]}; //Sign extend the 8 bit immediate for input to the alu on lhb llb.
-    call_pc <= pc + 1;
+    call_pc <= pc + 1; //Used to store the temp pc, for some reason pc is updated before registers.
 end
 
 
@@ -54,9 +54,8 @@ wire [15:0] reg_out_1, reg_out_2; //The register outputs.
 wire [3:0] rf_dst_addr; //The register write address.
 wire [15:0] rf_dst_in; //The register write data.
 wire [3:0] bypass;
-assign bypass = (!mem_wrt&&mem_to_reg) ? instr[3:0] : instr[7:4];
-assign rf_r1_addr = (lhb|mem_wrt) ? instr [11:8] : bypass; //REGISTER TO READ 1 in lhb use rd as src.
-assign rf_r2_addr = instr[3:0]; //REGISTER TO READ 2
+assign rf_r1_addr = (lhb) ? instr [11:8] : instr[7:4]; //REGISTER TO READ 1 in lhb use rd as src.
+assign rf_r2_addr = (mem_wrt) ? instr[11:8] : instr[3:0]; //REGISTER TO READ 2
 assign rf_dst_addr = (call) ? 4'hf : instr[11:8]; //Mux the input of the write destination register.
 assign rf_dst_in = (call) ? call_pc : wb_data; //Mux the input of wb_data and the pc for call
 rf REG_FILE(clk,rf_r1_addr,rf_r2_addr,reg_out_1,reg_out_2,re0,re1,rf_dst_addr,rf_dst_in,reg_wrt,hlt);
@@ -79,7 +78,7 @@ wire [15:0] mem_addr, mem_wrt_data , wb_data, mem_rd_data;
 wire re, we; 
 assign we = mem_wrt;
 assign re =  ~we;
-assign mem_wrt_data = reg_out_1;
+assign mem_wrt_data = reg_out_2;
 DM Data_Mem(clk,mem_addr,re,we, mem_wrt_data,mem_rd_data);
 assign wb_data = (mem_to_reg) ? mem_rd_data : Alu_result;//Mux the outputs of Data memory and the alu for wb to reg file
 
