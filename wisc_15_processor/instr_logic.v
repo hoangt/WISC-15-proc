@@ -7,9 +7,9 @@ input z, v, n, branch, call, ret, halt;
 
 wire [15:0] branch_adder;
 reg [15:0] Out_pc;
-assign branch_adder = In_pc + 1 + B_imm; //TODO: For some reaon add doesn't work for neg.
+assign branch_adder = In_pc + 1 + B_imm;
 
-always @ (In_pc,Cond,z,v,n,branch,call,ret,halt,B_imm,C_imm,Ret_reg) 
+always @ *//(In_pc,Cond,z,v,n,branch,call,ret,halt,B_imm,C_imm,Ret_reg) 
     begin
         //Calculate the branch address.
         //$display("b_adder:%d In_pc:%d B_imm:%d zflag:%b", branch_adder, In_pc, B_imm,z);
@@ -65,7 +65,7 @@ always @ (In_pc,Cond,z,v,n,branch,call,ret,halt,B_imm,C_imm,Ret_reg)
             Out_pc <= In_pc;
         else
             Out_pc <= In_pc + 1;
-        //$display("Out_pc:%h",Out_pc);
+        $display("Out_pc:%h",Out_pc);
     end
 
 endmodule
