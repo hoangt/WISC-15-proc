@@ -19,6 +19,19 @@ initial begin
     //    end
     //end
 
+    //TEST SUB
+    Alu_Ctrl = 4'b0001;
+    for (A = 0; A < (1<<15); A = A+31) begin
+        for (B = 0; B < (1<<15); B = B+73) begin
+            #1
+            if (Result != ((A-B)& 17'h0ffff))
+                $display("BAD SUB, A:%h B%h Result:%h Expected:%h", A, B, Result, ((A-B)& 17'h0ffff));
+                //$display("BAD ADD, A:%h B%h Result:%b Expected:%h, v:%b, n:%b z:%b", A, B, Result, A+B, v,n,z);
+        end
+    end
+
+
+
     //TEST XOR
     //Alu_Ctrl = 4'b1000;
     //for (A = 0; A < (1<<16); A = A+31) begin

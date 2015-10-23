@@ -11,30 +11,46 @@ reg [15:0] Out_pc;
 always @ (In_pc, Out_pc, Cond,z,v,n,branch) 
     begin
         //Calculate the branch address.
-        branch_adder <= In_pc + 1 + B_imm;
+        branch_adder <= In_pc + 1 + B_imm; //TODO: For some reaon add doesn't work for neg.
+        //$display("b_adder:%d In_pc:%d B_imm:%d zflag:%b", branch_adder, In_pc, B_imm,z);
         if (branch) begin
+            //Out_pc <= In_pc + 1; //Fail of b condition means just increment pc.
             case (Cond)
                 3'b000: //Not Eq
                     if (!z)
                         Out_pc <= branch_adder;
+                    else
+                        Out_pc <= In_pc + 1; //Fail of b condition means just increment pc.
                 3'b001: //Eq
                     if (z)
                         Out_pc <= branch_adder;
+                    else
+                        Out_pc <= In_pc + 1; //Fail of b condition means just increment pc.
                 3'b010: //Greater Than
                     if ((n == z) && (!z))
                         Out_pc <= branch_adder;
+                    else
+                        Out_pc <= In_pc + 1; //Fail of b condition means just increment pc.
                 3'b011: //Less than
                     if (n)
                         Out_pc <= branch_adder;
+                    else
+                        Out_pc <= In_pc + 1; //Fail of b condition means just increment pc.
                 3'b100: //Greather than or eq
                     if ( z || ((n == z) && !z))
                         Out_pc <= branch_adder;
+                    else
+                        Out_pc <= In_pc + 1; //Fail of b condition means just increment pc.
                 3'b101: //Lt or Eq
                     if (n || z)
                         Out_pc <= branch_adder;
+                    else
+                        Out_pc <= In_pc + 1; //Fail of b condition means just increment pc.
                 3'b110: //Overflow
                     if (v)
                         Out_pc <= branch_adder;
+                    else
+                        Out_pc <= In_pc + 1; //Fail of b condition means just increment pc.
                 3'b111: //Unconditional
                     Out_pc <= branch_adder;
             endcase

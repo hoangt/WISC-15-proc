@@ -1,0 +1,62 @@
+@0000 BF0F //LLB
+@0001 AF0F //LHB
+@0002 B1AA //LLB
+@0003 A100 //LHB
+@0004 CE01 //B
+@0005 B100 //LLB
+@0006 D004 //CONT: CALL to FUNC
+@0007 B457 //LLB
+@0008 A400 //LHB
+@0009 1034 //SUB
+@000A C206 //BRANCH to PASS
+@000B B357 //FUNC: LLB
+@000C A300 //LHB
+@000D E0F0 //RET
+@000E B2FF //FAIL:LLB
+@000F A2FF //LHB
+@0010 F000 //HALT
+@0011 A1AA //PASS: LHB
+@0012 F000 //HALT
+
+//
+//        LLB R15, 0x0F       
+//        LHB R15, 0x0F       # R15=0x0F0F
+//
+//
+//
+//        LLB R1, 0xAA        
+//
+//        LHB R1, 0x00        # R1=0x00AA
+//        B UNCOND, CONT      # branch to CONT
+//        LLB R1, 0x00        # this should not be executed
+//
+//
+//
+//CONT:       CALL FUNC       # call to function
+//        LLB R4, 0x57
+//        LHB R4, 0x00
+//
+//        SUB R0, R3, R4
+//
+//        B EQ, PASS
+//
+//FUNC:       LLB R3, 0x57
+//        LHB R3, 0x00
+//
+//        RET         # return
+//
+//    
+//
+//FAIL:       LLB R2, 0xFF
+//
+//        LHB R2, 0xFF        # R2 will contain 0xFFFF (indicates failure)            HLT
+//
+//
+//
+//
+//PASS:       LHB R1, 0xAA        # R1 will contain 0xAAAA (indicated pass)
+//
+//        HLT
+//
+//        
+//
