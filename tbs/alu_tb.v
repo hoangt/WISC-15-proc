@@ -1,3 +1,8 @@
+
+`include "alu/alu.v"
+//`include "alu/au.v"
+//`include "alu/full_adder.v"
+
 module alu_tb();
 reg [16:0] A, B; //Inputs A and B
 reg [3:0] Alu_Ctrl; //The Alu_Control Signals
@@ -21,14 +26,20 @@ initial begin
 
     //TEST SUB
     Alu_Ctrl = 4'b0001;
-    for (A = 0; A < (1<<15); A = A+31) begin
-        for (B = 0; B < (1<<15); B = B+73) begin
-            #1
-            if (Result != ((A-B)& 17'h0ffff))
-                $display("BAD SUB, A:%h B%h Result:%h Expected:%h", A, B, Result, ((A-B)& 17'h0ffff));
-                //$display("BAD ADD, A:%h B%h Result:%b Expected:%h, v:%b, n:%b z:%b", A, B, Result, A+B, v,n,z);
-        end
-    end
+    A = 6;
+    B = 6;
+#1
+    if (Result != 0)
+        $display("BAD SUB, A:%h B%h Result:%b Expected:%h, v:%b, n:%b z:%b", A, B, Result, 0, v,n,z);
+        $display("BAD SUB, A:%h B%h Result:%b Expected:%h, v:%b, n:%b z:%b", A, B, Result, 0, v,n,z);
+    //for (A = 0; A < (1<<15); A = A+31) begin
+    //    for (B = 0; B < (1<<15); B = B+73) begin
+    //        #1
+    //        if (Result != ((A-B)& 17'h0ffff))
+    //            $display("BAD SUB, A:%h B%h Result:%h Expected:%h", A, B, Result, ((A-B)& 17'h0ffff));
+    //            //$display("BAD ADD, A:%h B%h Result:%b Expected:%h, v:%b, n:%b z:%b", A, B, Result, A+B, v,n,z);
+    //    end
+    //end
 
 
 

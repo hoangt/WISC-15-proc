@@ -5,7 +5,7 @@ module control_unit_tb();
 reg [4:0] Inst;
 wire [3:0] Alu_Cmd;
 
-control_unit iDUT(Alu_Cmd, alu_src, reg_wrt, mem_to_reg, mem_wrt, branch, call, ret, halt, set_over, set_zero, Inst[3:0]);
+control_unit iDUT(Alu_Cmd, alu_src, reg_wrt, mem_to_reg, mem_wrt, branch, call, ret, halt, set_over, set_zero,llb,lhb, Inst[3:0]);
 
 initial begin
     for (Inst = 0; Inst < 5'h10; Inst = Inst +1) begin

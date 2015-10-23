@@ -18,7 +18,8 @@ always @(addr,rd_en,clk)
 initial begin
   //$readmemh("test_progs_hex/LwStall.hex",instr_mem);
   //$readmemh("test_progs_hex/Loop.hex",instr_mem);
-  $readmemh("test_progs_hex/Control.hex",instr_mem);
+  //$readmemh("test_progs_hex/Control.hex",instr_mem);
+  $readmemh("test_progs_hex/DataDependence.hex",instr_mem);
 end
 
 endmodule

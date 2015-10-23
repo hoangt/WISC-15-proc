@@ -51,7 +51,7 @@ assign re0 = 1;  assign re1 = 1; //Set both registers to read perminentaly.
 wire [15:0] reg_out_1, reg_out_2; //The register outputs.
 wire [3:0] rf_dst_addr; //The register write address.
 wire [15:0] rf_dst_in; //The register write data.
-assign rf_r1_addr = (lhb) ? instr [11:8] : instr[7:4]; //REGISTER TO READ 1 in lhb use rd as src.
+assign rf_r1_addr = (lhb|mem_wrt) ? instr [11:8] : instr[7:4]; //REGISTER TO READ 1 in lhb use rd as src.
 assign rf_r2_addr = instr[3:0]; //REGISTER TO READ 2
 assign rf_dst_addr = (call) ? 4'hf : instr[11:8]; //Mux the input of the write destination register.
 assign rf_dst_in = (call) ? pc + 1 : wb_data; //Mux the input of wb_data and the pc for call
@@ -75,7 +75,7 @@ wire [15:0] mem_addr, mem_wrt_data , wb_data, mem_rd_data;
 wire re, we; 
 assign we = mem_wrt;
 assign re =  ~we;
-assign mem_wrt_data = reg_out_2;
+assign mem_wrt_data = reg_out_1;
 DM Data_Mem(clk,mem_addr,re,we, mem_wrt_data,mem_rd_data);
 assign wb_data = (mem_to_reg) ? mem_rd_data : Alu_result;//Mux the outputs of Data memory and the alu for wb to reg file
 
@@ -104,6 +104,8 @@ begin
                 pc <= 0;
             else
                 pc <= New_pc;
+            if (pc >= 100)
+                $finish();
 end
 
 always @ (posedge clk)
@@ -111,10 +113,10 @@ begin
             //if (pc >= 10)
                 //$display(" oops");
             $display("pc:%d", pc);
-            //$display("OP:%h WE:%b ctrl_mem_wrt:%b mem_data_in:%d", instr, we, mem_wrt, mem_wrt_data);
-            //$display("OP:%h REG_RD_1:%h REG_RD_2:%h ALURESULT:%h WBDATA:%d", instr, reg_out_1, reg_out_2, Alu_result, wb_data);
+            $display("OP:%h WE:%b ctrl_mem_wrt:%b mem_adder:%d mem_data_in:%d mem_rd_data:%d", instr, we, mem_wrt, mem_addr, mem_wrt_data, mem_rd_data);
+            $display("OP:%h REG_RD_1:%h REG_RD_2:%h ALURESULT:%h WBDATA:%d", instr, reg_out_1, reg_out_2, Alu_result, wb_data);
             //$display("lb_imm%d, lhb:%b llb:%b, Imm%d", Lb_imm, lhb, llb, Imm);
-            //$display("OP:%h ALU IN A:%d ALU IN B:%d RESULT:%h", instr, A_in_alu, B_in_alu, Alu_result);
+            //$display("OP:%h ALU IN A:%d ALU IN B:%d RESULT:%h, ALU_CMD:%b", instr, A_in_alu, B_in_alu, Alu_result, Alu_Cmd);
 end
 
 always @ (set_zero,set_over,n_flag,v_flag,z_flag,alu_z,alu_n,alu_v)
