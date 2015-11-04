@@ -16,19 +16,19 @@ wire [15:0] i_mem_data, i_alu_result;
 wire [3:0] i_wb_dst;
 
 always @(posedge clk, rst_n) begin
-    if (!clear && rst_n) begin
-        o_mem_to_reg <= i_mem_to_reg; 
-        o_wb_dst <= i_wb_dst;
-        o_mem_data <= i_mem_data;
-        o_alu_result <= i_alu_result;
-        o_reg_wrt <= i_reg_wrt;
-    end
-    else begin
+    if ((clear && clk) || !rst_n)begin
         o_mem_to_reg <= 0; 
         o_wb_dst <= 0;
         o_mem_data <= 0;
         o_alu_result <= 0;
         o_reg_wrt <= 0;
+    end
+    else if (clk) begin
+        o_mem_to_reg <= i_mem_to_reg; 
+        o_wb_dst <= i_wb_dst;
+        o_mem_data <= i_mem_data;
+        o_alu_result <= i_alu_result;
+        o_reg_wrt <= i_reg_wrt;
     end
 end
 

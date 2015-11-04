@@ -5,6 +5,7 @@
 `include "instr_logic.v"
 `include "data_mem.v"
 `include "pipe_registers/mem_wb_reg.v"
+`include "pipe_registers/ex_mem_reg.v"
 
 //TODO: Reduce some of the extra control signals being used ex: llb,lhb and merge them into alu_op
 //TODO: Special handling of call is needed in pipeline (we need to write to register right away)
@@ -40,6 +41,7 @@ instr_logic pc_calc(New_pc, pc, Ret_reg, C_imm, B_imm,instr[11:9], z_flag, v_fla
 assign rd_en =1;// ~hlt;
 IM instruction_mem(clk,pc,rd_en,instr);
 
+//TODO: INSERT stage 1/2 register.
 
 //CONTROL UNIT STUFF
 wire [3:0] Alu_Cmd;
@@ -64,12 +66,19 @@ assign Imm = (lhb|llb) ? Lb_imm: Inst_imm; //Mux the lb immediate and normal ins
 assign B_in_alu = (alu_src) ? Imm: reg_out_2;//Mux the alu_src imm and register_rd
 assign A_in_alu = reg_out_1;
 
+//TODO: INSERT stage 2/3 register.
+
 //ALU STUFF
 wire [15:0] Alu_result;
 wire alu_v, alu_n, alu_z;
 wire [15:0] A_in_alu, B_in_alu; 
 alu ALU(Alu_result, alu_v, alu_n, alu_z, A_in_alu, B_in_alu, Alu_Cmd, llb, lhb);
 assign mem_addr = Alu_result;
+
+
+
+//TODO: INSERT stage 3/4 register.
+//mem_ex_reg stage4(clk, rst_n, s4_clear, i_mem_to_reg, i_wb_dst, i_alu_result, i_mem_wrt, i_mem_wrt_data, i_mem_read, o_mem_to_reg, o_wb_dst, o_alu_result, o_mem_wrt, o_mem_wrt_data, o_mem_read);
 
 
 //DATA MEMORY STUFF
@@ -122,14 +131,15 @@ assign s5_wb_data = (s5_mem_to_reg) ? s5_mem_data : s5_alu_result; //Mux the out
 //        if (~rst_n)
 //            pc <= 0;
 //end
-always @ (negedge rst_n, posedge clk) 
+always @ (rst_n, posedge clk) 
 begin
-            call_pc <= pc + 1; //Used to store the temp pc, otherwise a feedback loop is present.
             
             if (!rst_n)
                 pc <= 0;
-            else
+	else if (clk) begin
+		call_pc <= pc + 1; //Used to store the temp pc, otherwise a feedback loop is present.
                 pc <= New_pc;
+	end
             //if(pc >= 16'h001A)
             //    $finish();
             //$display("New_pc:%h", branch);
@@ -144,7 +154,7 @@ begin
     //    $display("rf_r1_addr:%h rf_dst_addr:%h reg_wrt:%b",rf_r1_addr,rf_dst_addr, reg_wrt);
             //if (pc >= 10)
                 //$display(" oops");
-            $display("pc:%h", pc);
+            //$display("pc:%h", pc);
             //$display("OP:%h WE:%b ctrl_mem_wrt:%b mem_adder:%d mem_data_in:%d mem_rd_data:%d", instr, we, mem_wrt, mem_addr, mem_wrt_data, mem_rd_data);
             //$display("OP:%h REG_RD_1:%h REG_RD_2:%h ALURESULT:%h WBDATA:%d", instr, reg_out_1, reg_out_2, Alu_result, wb_data);
             //
@@ -152,7 +162,7 @@ begin
             //
             //$display("OP:%h ALU IN A:%d ALU IN B:%d RESULT:%h, ALU_CMD:%b", instr, A_in_alu, B_in_alu, Alu_result, Alu_Cmd);
 
-	    $display("s4_alu_result:%h s5_wb_data:%h s5_alu_result:%h s5_reg_wrt:%h s5_wb_dst:%h", s4_alu_result, s5_wb_data, s5_alu_result, s5_reg_wrt, s5_wb_dst);
+	    //$display("s4_alu_result:%h s5_wb_data:%h s5_alu_result:%h s5_reg_wrt:%h s5_wb_dst:%h", s4_alu_result, s5_wb_data, s5_alu_result, s5_reg_wrt, s5_wb_dst);
             //$display("s5_mem_to_reg:%h",s5_mem_to_reg );
 
 end
