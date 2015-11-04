@@ -4,6 +4,10 @@
 `include "rf_pipelined.v"
 `include "instr_logic.v"
 `include "data_mem.v"
+`include "pipe_registers/mem_wb_reg.v"
+
+//TODO: Reduce some of the extra control signals being used ex: llb,lhb and merge them into alu_op
+//TODO: Special handling of call is needed in pipeline (we need to write to register right away)
 
 module cpu(pc, hlt, clk, rst_n);
 input clk, rst_n;
@@ -21,9 +25,6 @@ wire [15:0] New_pc;
 wire [15:0] C_imm, B_imm, Inst_imm, Lb_imm;
 reg [15:0] call_pc;
 wire [15:0] instr, Ret_reg, Imm;
-
-//TODO: Reduce some of the extra control signals being used ex: llb,lhb and merge them into alu_op
-
 
 assign  C_imm[15:0] = {{4{instr[11]}},instr[11:0] } ;//Sign extend values for call.
 assign B_imm[15:0] = {{7{instr[8]}},instr[8:0] }; //Sign extend values for branch.
@@ -56,7 +57,7 @@ wire [3:0] bypass;
 assign rf_r1_addr = (lhb) ? instr [11:8] : instr[7:4]; //REGISTER TO READ 1 in lhb use rd as src.
 assign rf_r2_addr = (mem_wrt) ? instr[11:8] : instr[3:0]; //REGISTER TO READ 2
 assign rf_dst_addr = (call) ? 4'hf : instr[11:8]; //Mux the input of the write destination register.
-assign rf_dst_in = (call) ? call_pc: wb_data; //Mux the input of wb_data and the pc for call
+assign rf_dst_in = (call) ? call_pc: s5_wb_data; //Mux the input of wb_data and the pc for call
 rf REG_FILE(clk,rf_r1_addr,rf_r2_addr,reg_out_1,reg_out_2,re0,re1,rf_dst_addr,rf_dst_in,reg_wrt,hlt);
 
 assign Imm = (lhb|llb) ? Lb_imm: Inst_imm; //Mux the lb immediate and normal inst immediate for input to alu.
@@ -72,13 +73,34 @@ assign mem_addr = Alu_result;
 
 
 //DATA MEMORY STUFF
-wire [15:0] mem_addr, mem_wrt_data , wb_data, mem_rd_data;
+wire [15:0] mem_addr, mem_wrt_data ;
 wire re, we; 
 assign we = mem_wrt;
 assign re =  ~we;
 assign mem_wrt_data = reg_out_2;
-DM Data_Mem(clk,mem_addr,re,we, mem_wrt_data,mem_rd_data);
-assign wb_data = (mem_to_reg) ? mem_rd_data : Alu_result;//Mux the outputs of Data memory and the alu for wb to reg file
+DM Data_Mem(clk,mem_addr,re,we, mem_wrt_data,s4_mem_rd_data);
+
+
+wire [15:0] s4_mem_rd_data, s4_alu_result;
+wire [3:0] s4_wb_dst;
+
+//TODO: Currently assign from ctrl unit, soon assign from STAGE 3/4 REG
+assign s4_mem_to_reg = mem_to_reg; 
+assign s4_wb_dst = rf_dst_addr; //TODO: Needs fixing for call
+assign s4_alu_result = Alu_result;  //TODO: Needs fixing for call
+
+assign s5_clear = 0; //TODO: Set with the pipeline unit.
+
+//MEM_WB PIPELINE REGISTER STAGE 4/5
+mem_wb_reg stage5(clk, rst_n, s5_clear, s4_mem_to_reg, s4_wb_dst, s4_mem_rd_data, s4_alu_result, s5_mem_to_reg, s5_wb_dst, s5_mem_data, s5_alu_result);
+
+wire [15:0] s5_mem_data, s5_alu_result;
+wire [3:0] s5_wb_dst;
+assign s5_wb_data = (s5_mem_to_reg) ? s5_mem_data : s4_alu_result; //Mux the output of Data mem and alu for wb to reg file
+
+
+
+
 
 //always @ (rst_n, clk) 
 //begin
