@@ -18,23 +18,20 @@ initial pc = 0;
 
 wire [15:0] New_pc; 
 
-reg [15:0] C_imm, B_imm, Inst_imm, Lb_imm;
+wire [15:0] C_imm, B_imm, Inst_imm, Lb_imm;
 reg [15:0] call_pc;
 wire [15:0] instr, Ret_reg, Imm;
 
-
-//Sign extenders.
-always @(C_imm, B_imm, instr, Lb_imm)
-begin
-    C_imm[15:0] <= {{4{instr[11]}},instr[11:0] } ;//Sign extend values for call.
-    B_imm[15:0] <= {{7{instr[8]}},instr[8:0] }; //Sign extend values for branch.
-    Inst_imm[15:0] <= {{12{instr[3]}},instr[3:0] }; //Sign extend the 4 bit immediate for input to alu.
-    Lb_imm[15:0] <= {{8{instr[7]}}, instr[7:0]}; //Sign extend the 8 bit immediate for input to the alu on lhb llb.
-    call_pc <= pc + 1; //Used to store the temp pc, for some reason pc is updated before registers.
-end
+//TODO: Reduce some of the extra control signals being used ex: llb,lhb and merge them into alu_op
 
 
-//Instruction Memory Stuff
+assign  C_imm[15:0] = {{4{instr[11]}},instr[11:0] } ;//Sign extend values for call.
+assign B_imm[15:0] = {{7{instr[8]}},instr[8:0] }; //Sign extend values for branch.
+assign Inst_imm[15:0] = {{12{instr[3]}},instr[3:0] }; //Sign extend the 4 bit immediate for input to alu.
+assign Lb_imm[15:0] = {{8{instr[7]}}, instr[7:0]}; //Sign extend the 8 bit immediate for input to the alu on lhb llb.
+
+wire reg_wrt, mem_to_reg, mem_wrt, branch, halt, set_over, set_zero, call, ret, alu_src, llb, lhb;
+//Instruction Memory Stuff/ Branch logic
 //Address Calculation.
 assign Ret_reg = reg_out_1; //Grab the input for return addr as reading rs register.
 instr_logic pc_calc(New_pc, pc, Ret_reg, C_imm, B_imm,instr[11:9], z_flag, v_flag, n_flag, branch, call, ret, halt);
@@ -42,10 +39,12 @@ instr_logic pc_calc(New_pc, pc, Ret_reg, C_imm, B_imm,instr[11:9], z_flag, v_fla
 assign rd_en =1;// ~hlt;
 IM instruction_mem(clk,pc,rd_en,instr);
 
+
 //CONTROL UNIT STUFF
 wire [3:0] Alu_Cmd;
-wire reg_wrt, mem_to_reg, mem_wrt, branch, halt, set_over, set_zero, call, ret, alu_src, llb, lhb;
+//Sign extenders for branch offsets.
 control_unit control(Alu_Cmd, alu_src, reg_wrt, mem_to_reg, mem_wrt, branch, call, ret, halt, set_over, set_zero,llb,lhb, instr[15:12]);
+
 
 //Register File Stuff
 wire [3:0] rf_r1_addr, rf_r2_addr; //Register read inputs.
@@ -70,7 +69,6 @@ wire alu_v, alu_n, alu_z;
 wire [15:0] A_in_alu, B_in_alu; 
 alu ALU(Alu_result, alu_v, alu_n, alu_z, A_in_alu, B_in_alu, Alu_Cmd, llb, lhb);
 assign mem_addr = Alu_result;
-
 
 
 //DATA MEMORY STUFF
@@ -103,6 +101,8 @@ assign wb_data = (mem_to_reg) ? mem_rd_data : Alu_result;//Mux the outputs of Da
 //end
 always @ (rst_n, posedge clk) 
 begin
+            call_pc <= pc + 1; //Used to store the temp pc, otherwise a feedback loop is present.
+            
             if (!rst_n)
                 pc <= 0;
             else
