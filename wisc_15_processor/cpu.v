@@ -5,6 +5,9 @@
 `include "instr_logic.v"
 `include "data_mem.v"
 
+//TODO: Reduce some of the extra control signals being used ex: llb,lhb and merge them into alu_op
+//TODO: Create registers.
+
 module cpu(pc, hlt, clk, rst_n);
 input clk, rst_n;
 output [15:0] pc;
@@ -22,7 +25,6 @@ wire [15:0] C_imm, B_imm, Inst_imm, Lb_imm;
 reg [15:0] call_pc;
 wire [15:0] instr, Ret_reg, Imm;
 
-//TODO: Reduce some of the extra control signals being used ex: llb,lhb and merge them into alu_op
 
 
 assign  C_imm[15:0] = {{4{instr[11]}},instr[11:0] } ;//Sign extend values for call.
@@ -30,45 +32,130 @@ assign B_imm[15:0] = {{7{instr[8]}},instr[8:0] }; //Sign extend values for branc
 assign Inst_imm[15:0] = {{12{instr[3]}},instr[3:0] }; //Sign extend the 4 bit immediate for input to alu.
 assign Lb_imm[15:0] = {{8{instr[7]}}, instr[7:0]}; //Sign extend the 8 bit immediate for input to the alu on lhb llb.
 
-wire reg_wrt, mem_to_reg, mem_wrt, branch, halt, set_over, set_zero, call, ret, alu_src, llb, lhb;
+// ***PC REG***
+always @ (negedge rst_n, posedge clk) 
+begin
+            call_pc <= pc + 1; //Used to store the temp pc, otherwise a feedback loop is present.
+            
+            if (!rst_n)
+                pc <= 0;
+            else if (clk)
+                pc <= New_pc;
+            //if(pc >= 16'h001A)
+            //    $finish();
+            //$display("New_pc:%h", branch);
+end
+
+wire id_reg_wrt, id_mem_to_reg, mem_wrt, branch, halt, id_set_over, set_zero, call, ret, alu_src, id_llb, id_lhb;
 //Instruction Memory Stuff/ Branch logic
 //Address Calculation.
 assign Ret_reg = reg_out_1; //Grab the input for return addr as reading rs register.
 instr_logic pc_calc(New_pc, pc, Ret_reg, C_imm, B_imm,instr[11:9], z_flag, v_flag, n_flag, branch, call, ret, halt);
 
 assign rd_en =1;// ~hlt;
-IM instruction_mem(clk,pc,rd_en,instr);
+//TODO MODIFY INs.
+IM instruction_mem(clk,pc,rd_en,if_instr);
+
+// **IF_ID REG**
+reg if_id_clear, if_id_we;
+reg [15:0] if_id_instr;
+always @ (posedge clk, negedge clr_n) begin
+    //Set the registers.
+    if ((!clr_n) || (clk && if_id_clear)) begin
+        if_id_instr <= 0;
+    end
+    else if (clk && if_id_we) begin
+        if_id_instr <= if_instr;
+    end
+end
+
 
 
 //CONTROL UNIT STUFF
 wire [3:0] Alu_Cmd;
 //Sign extenders for branch offsets.
-control_unit control(Alu_Cmd, alu_src, reg_wrt, mem_to_reg, mem_wrt, branch, call, ret, halt, set_over, set_zero,llb,lhb, instr[15:12]);
+control_unit control(Alu_Cmd, alu_src, id_reg_wrt, id_mem_to_reg, id_mem_wrt, branch, call, ret, halt, id_set_over, id_set_zero,id_llb,id_lhb, if_id_instr[15:12]);
 
 
 //Register File Stuff
-wire [3:0] rf_r1_addr, rf_r2_addr; //Register read inputs.
 assign re0 = 1;  assign re1 = 1; //Set both registers to read perminentaly.
-wire [15:0] reg_out_1, reg_out_2; //The register outputs.
-wire [3:0] rf_dst_addr; //The register write address.
-wire [15:0] rf_dst_in; //The register write data.
-wire [3:0] bypass;
-assign rf_r1_addr = (lhb) ? instr [11:8] : instr[7:4]; //REGISTER TO READ 1 in lhb use rd as src.
-assign rf_r2_addr = (mem_wrt) ? instr[11:8] : instr[3:0]; //REGISTER TO READ 2
-assign rf_dst_addr = (call) ? 4'hf : instr[11:8]; //Mux the input of the write destination register.
-assign rf_dst_in = (call) ? call_pc: wb_data; //Mux the input of wb_data and the pc for call
-rf REG_FILE(clk,rf_r1_addr,rf_r2_addr,reg_out_1,reg_out_2,re0,re1,rf_dst_addr,rf_dst_in,reg_wrt,hlt);
 
-assign Imm = (lhb|llb) ? Lb_imm: Inst_imm; //Mux the lb immediate and normal inst immediate for input to alu.
-assign B_in_alu = (alu_src) ? Imm: reg_out_2;//Mux the alu_src imm and register_rd
-assign A_in_alu = reg_out_1;
+wire [3:0] rf_r1_addr, rf_r2_addr; //Register read inputs.
+wire [15:0] reg_out_1, reg_out_2; //The register outputs.
+wire [15:0] id_alu_in_b , id_alu_in_a; 
+assign rf_r1_addr = (id_lhb) ? if_id_instr [11:8] : if_id_instr[7:4]; //REGISTER TO READ 1 in lhb use rd as src.
+assign rf_r2_addr = (id_mem_wrt) ? if_id_instr[11:8] : if_id_instr[3:0]; //REGISTER TO READ 2
+
+//TODO: Fix this for "call"
+//assign rf_dst_in = (call) ? call_pc: wb_data; //Mux the input of wb_data and the pc for call
+rf REG_FILE(clk,rf_r1_addr,rf_r2_addr,reg_out_1,reg_out_2,re0,re1,wb_wb_dst,wb_data,reg_wrt,hlt); //TODO ENSURE WB CORRECTNESS need to set wb_data, reg_wrt
+
+assign Imm = (id_lhb||id_llb) ? Lb_imm: Inst_imm; //Mux the lb immediate and normal inst immediate for input to alu.
+assign id_alu_in_b = (alu_src) ? Imm: reg_out_2;//Mux the alu_src imm and register_rd
+assign id_alu_in_a = reg_out_1;
+
+
+wire [3:0] id_wb_dst; //The register write address.
+wire [15:0] id_wb_data; //The register write data.
+
+assign id_wb_dst= (call) ? 4'hf : if_id_instr[11:8]; //Mux the input of the write destination register.
+
+// **ID_EX REGISTER**
+reg id_ex_clear, id_ex_we;
+reg id_ex_mem_we, id_ex_mem_re, id_ex_mem_to_reg, id_ex_write_reg; 
+reg id_ex_llb, id_ex_lhb;
+reg [3:0] id_ex_wb_dst;
+reg [3:0] id_ex_alu_cmd;
+reg [15:0] id_ex_alu_in_a, id_ex_alu_in_b;
+
+always @ (posedge clk, negedge clr_n) begin
+    //Set the registers.
+    if ((!clr_n) || (clk && id_ex_clear)) begin
+        id_ex_mem_we <= 0;
+        id_ex_mem_re <= 0;
+        id_ex_mem_to_reg <= 0;
+        id_ex_write_reg  <= 0;
+        id_ex_llb <= 0;
+        id_ex_lhb <= 0;
+        id_ex_wb_dst <= 0;
+        id_ex_alu_cmd <= 0;
+        id_ex_alu_in_a <= 0;
+        id_ex_alu_in_b <= 0;
+    end
+    else if (clk && id_ex_we) begin
+        id_ex_mem_we <= id_mem_wrt;     //j
+        id_ex_mem_re <= ~id_mem_wrt; //TODO Might need to change later (for when reading memory has cost)
+        id_ex_mem_to_reg <= id_mem_to_reg; //j
+        id_ex_write_reg  <= id_reg_wrt; //j
+        id_ex_wb_dst <= id_wb_dst;      //j
+        id_ex_llb <= id_llb;            //j
+        id_ex_lhb <= id_lhb;            //j
+        id_ex_alu_cmd <= id_alu_cmd;    //j
+        id_ex_alu_in_a <= id_alu_in_a; //j
+        id_ex_alu_in_b <= id_alu_in_b; //j
+    end
+end
 
 //ALU STUFF
 wire [15:0] Alu_result;
 wire alu_v, alu_n, alu_z;
-wire [15:0] A_in_alu, B_in_alu; 
 alu ALU(Alu_result, alu_v, alu_n, alu_z, A_in_alu, B_in_alu, Alu_Cmd, llb, lhb);
 assign mem_addr = Alu_result;
+
+// **EX_MEM REGISTER**
+reg ex_mem_clear, ex_mem_we;
+reg ex_mem_mem_we, ex_mem_mem_re, ex_mem_mem_to_reg, ex_mem_write_reg; 
+reg [3:0] ex_mem_wb_dst;
+reg [15:0] ex_mem_alu_output, ex_mem_mem_data_in; //alu output, data to be written to mem.
+
+always @ (posedge clk, negedge clr_n) begin
+    //Set the registers.
+    if (!clr_n || (clk && ex_mem_clear)) begin
+    end
+    else if (clk && ex_mem_we)
+    end
+end
+
 
 
 //DATA MEMORY STUFF
@@ -78,7 +165,25 @@ assign we = mem_wrt;
 assign re =  ~we;
 assign mem_wrt_data = reg_out_2;
 DM Data_Mem(clk,mem_addr,re,we, mem_wrt_data,mem_rd_data);
-assign wb_data = (mem_to_reg) ? mem_rd_data : Alu_result;//Mux the outputs of Data memory and the alu for wb to reg file
+
+// **MEM_WB REGISTER**
+reg mem_wb_clear, mem_wb_we;
+reg mem_wb_mem_to_reg, mem_wb_write_reg; 
+reg [3:0] mem_wb_wb_dst;
+reg [15:0] mem_wb_alu_output, mem_wb_mem_data_output;
+
+always @ (posedge clk, negedge clr_n) begin
+    //Set the registers.
+    if (!clr_n || (clk && mem_wb_clear)) begin
+    end
+    else if (clk && mem_wb_we)
+    end
+end
+
+
+//assign wb_data = (mem_wb_mem_to_reg) ? mem_rd_data : Alu_result;//Mux the outputs of Data memory and the alu for wb to reg file
+assign wb_data = (mem_wb_mem_to_reg) ? mem_wb_mem_data_output : mem_wb_alu_output;//Mux the outputs of Data memory and the alu for wb to reg file
+
 
 //always @ (rst_n, clk) 
 //begin
@@ -99,18 +204,6 @@ assign wb_data = (mem_to_reg) ? mem_rd_data : Alu_result;//Mux the outputs of Da
 //        if (~rst_n)
 //            pc <= 0;
 //end
-always @ (rst_n, posedge clk) 
-begin
-            call_pc <= pc + 1; //Used to store the temp pc, otherwise a feedback loop is present.
-            
-            if (!rst_n)
-                pc <= 0;
-            else
-                pc <= New_pc;
-            //if(pc >= 16'h001A)
-            //    $finish();
-            //$display("New_pc:%h", branch);
-end
 
 always @ (posedge clk)
 begin
@@ -130,6 +223,7 @@ begin
             //$display("OP:%h ALU IN A:%d ALU IN B:%d RESULT:%h, ALU_CMD:%b", instr, A_in_alu, B_in_alu, Alu_result, Alu_Cmd);
 end
 
+//TODO: Fix flag setting
 always @ (set_zero,set_over,n_flag,v_flag,z_flag,alu_z,alu_n,alu_v)
 begin
         //Set the flags (if signaled)
