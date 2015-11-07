@@ -55,18 +55,30 @@ assign re0 = 1;  assign re1 = 1; //Set both registers to read perminentaly.
 wire [15:0] reg_out_1, reg_out_2; //The register outputs.
 wire [3:0] rf_dst_addr; //The register write address.
 wire [15:0] rf_dst_in; //The register write data.
-wire [3:0] bypass;
 assign rf_r1_addr = (lhb) ? instr [11:8] : instr[7:4]; //REGISTER TO READ 1 in lhb use rd as src.
 assign rf_r2_addr = (mem_wrt) ? instr[11:8] : instr[3:0]; //REGISTER TO READ 2
 assign rf_dst_addr = (call) ? 4'hf : instr[11:8]; //Mux the input of the write destination register.
 assign rf_dst_in = (call) ? call_pc: s5_wb_data; //Mux the input of wb_data and the pc for call
 rf REG_FILE(clk,rf_r1_addr,rf_r2_addr,reg_out_1,reg_out_2,re0,re1,s5_wb_dst,rf_dst_in,s5_reg_wrt,hlt);
 
+
 assign Imm = (lhb|llb) ? Lb_imm: Inst_imm; //Mux the lb immediate and normal inst immediate for input to alu.
 assign B_in_alu = (alu_src) ? Imm: reg_out_2;//Mux the alu_src imm and register_rd
 assign A_in_alu = reg_out_1;
 
 //TODO: INSERT stage 2/3 register.
+
+reg [15:0] id_ex_in_b_data, id_ex_in_a_data;
+reg [3:0] id_ex_wb_dst;
+reg id_ex_mem_wrt, id_ex_mem_read, id_ex_llb, id_ex_lhb;
+reg [3:0] id_ex_alu_cmd;
+
+//TODO: Set regs.
+always @(posedge clk, negedge rst_n) begin
+
+end
+
+
 
 //ALU STUFF
 wire [15:0] Alu_result;
