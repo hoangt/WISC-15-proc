@@ -4,9 +4,9 @@
 `include "rf_pipelined.v"
 `include "instr_logic.v"
 `include "data_mem.v"
+`include "hazard_detect.v"
 
 //TODO: Reduce some of the extra control signals being used ex: llb,lhb and merge them into alu_op
-//TODO: Create registers.
 //TODO: Create special logic for call.
 
 module cpu(pc, hlt, clk, rst_n);
@@ -26,10 +26,12 @@ wire [15:0] C_imm, B_imm, Inst_imm, Lb_imm;
 reg [15:0] call_pc;
 wire [15:0] if_instr, Ret_reg, Imm;
 
+hd detect_hazard(mem_wb_wb_dst, mem_wb_write_reg, ex_mem_wb_dst, ex_mem_write_reg, id_ex_wb_dst, id_ex_write_reg, rf_r1_addr, rf_r2_addr, stall); //TODO: Setup the rd regs
+
 /********************************  IF PHASE  ***********************************/
 
 // ***PC REG***
-assign pc_we = 1; //TODO later use hazard logic.
+assign pc_we = ~stall; //TODO later use hazard logic.
 always @ (negedge rst_n, posedge clk) 
 begin
             //call_pc <= pc + 1; //Used to store the temp pc, otherwise a feedback loop is present.
@@ -47,14 +49,14 @@ wire id_reg_wrt, id_mem_to_reg, mem_wrt, branch, halt, id_set_over, id_set_zero,
 //Address Calculation.
 
 assign rd_en =1;// ~hlt;
-//TODO MODIFY INs.
 IM instruction_mem(clk,pc,rd_en,if_instr);
 
 // **IF_ID REG**
 wire if_id_clear, if_id_we;
 reg [15:0] if_id_instr;
 
-assign if_id_we = 1;
+assign if_id_we = ~stall;
+assign if_id_clear = 0;
 always @ (posedge clk, negedge rst_n) begin
     //Set the registers.
     if ((!rst_n) || (clk && if_id_clear)) begin
@@ -95,7 +97,7 @@ assign rf_r2_addr = (id_mem_wrt) ? if_id_instr[11:8] : if_id_instr[3:0]; //REGIS
 
 //TODO: Fix this for "call"
 //assign rf_dst_in = (call) ? call_pc: wb_data; //Mux the input of wb_data and the pc for call
-rf REG_FILE(clk,rf_r1_addr,rf_r2_addr,reg_out_1,reg_out_2,re0,re1,mem_wb_wb_dst,wb_data,mem_wb_write_reg,hlt); //TODO ENSURE WB CORRECTNESS need to set wb_data, reg_wrt
+rf REG_FILE(clk,rf_r1_addr,rf_r2_addr,reg_out_1,reg_out_2,re0,re1,mem_wb_wb_dst,wb_data,mem_wb_write_reg,hlt); 
 
 assign Imm = (id_lhb||id_llb) ? Lb_imm: Inst_imm; //Mux the lb immediate and normal inst immediate for input to alu.
 assign id_alu_in_b = (alu_src) ? Imm: reg_out_2;//Mux the alu_src imm and register_rd
@@ -115,7 +117,8 @@ reg [3:0] id_ex_wb_dst;
 reg [3:0] id_ex_alu_cmd;
 reg [15:0] id_ex_alu_in_a, id_ex_alu_in_b, id_ex_mem_data_in;
 
-assign id_ex_we = 1;
+assign id_ex_we = ~stall;
+assign id_ex_clear = stall;
 always @ (posedge clk, negedge rst_n) begin
     //Set the registers.
     if ((! rst_n) || (clk && id_ex_clear)) begin
@@ -164,6 +167,7 @@ reg [3:0] ex_mem_wb_dst;
 reg [15:0] ex_mem_alu_output, ex_mem_mem_data_in; //alu output, data to be written to mem.
 
 assign ex_mem_we = 1;
+assign ex_mem_clear = 0;
 always @ (posedge clk, negedge rst_n) begin
     //Set the registers.
     if (! rst_n|| (clk && ex_mem_clear)) begin
@@ -203,6 +207,7 @@ reg [3:0] mem_wb_wb_dst;
 reg [15:0] mem_wb_alu_output, mem_wb_mem_data_output;
 
 assign mem_wb_we = 1;
+assign mem_wb_clear = 0;
 always @ (posedge clk, negedge rst_n) begin
     //Set the registers.
     if (! rst_n|| (clk && mem_wb_clear)) begin
@@ -229,46 +234,7 @@ end
 wire [15:0] wb_data;
 assign wb_data = (mem_wb_mem_to_reg) ? mem_wb_mem_data_output : mem_wb_alu_output;//Mux the outputs of Data memory and the alu for wb to reg file
 
-
-//always @ (rst_n, clk) 
-//begin
-//    if (clk) 
-//    begin
-//        pc <= New_pc;
-//        //$display("pc: in cpu %d", pc);
-//
-//        //Set the flags (if signaled)
-//            if (set_zero)
-//                z_flag <= alu_z;
-//            if (set_over) 
-//            begin
-//                v_flag <= alu_v;
-//                n_flag <= alu_n;
-//            end
-//    end
-//        if (~rst_n)
-//            pc <= 0;
-//end
-
-always @ (posedge clk)
-begin
-    //TEST CALL
-    //if(call)
-    //    $display("rf_dst_in:%h rf_dst_addr:%h reg_wrt:%b",rf_dst_in,rf_dst_addr, reg_wrt);
-    //if (ret)
-    //    $display("rf_r1_addr:%h rf_dst_addr:%h reg_wrt:%b",rf_r1_addr,rf_dst_addr, reg_wrt);
-            //if (pc >= 10)
-                //$display(" oops");
-            //$display("pc:%h", pc);
-            //$display("OP:%h WE:%b ctrl_mem_wrt:%b mem_adder:%d mem_data_in:%d mem_rd_data:%d", instr, we, mem_wrt, mem_addr, mem_wrt_data, mem_rd_data);
-            //$display("OP:%h REG_RD_1:%h REG_RD_2:%h ALURESULT:%h WBDATA:%d", instr, reg_out_1, reg_out_2, Alu_result, wb_data);
-            //
-            //$display("lb_imm%d, lhb:%b llb:%b, Imm%d", Lb_imm, lhb, llb, Imm);
-            //
-            //$display("OP:%h ALU IN A:%d ALU IN B:%d RESULT:%h, ALU_CMD:%b", instr, A_in_alu, B_in_alu, Alu_result, Alu_Cmd);
-end
-
-//TODO: Fix flag setting
+//FLAG SETTING
 always @ (posedge clk, negedge rst_n)
 begin
     if (!rst_n) begin
@@ -287,5 +253,40 @@ begin
             end
         end
     end
+
+
+
+/* TESTING */
+always @ (posedge clk)
+begin
+    $display("pc:%h stall:%b", pc, stall);
+    //$display("mem_wb_write_reg:%b  ex_mem:%b id_ex:%b", mem_wb_write_reg, ex_mem_write_reg, id_ex_write_reg);
+    //Test the IF output. /j
+    //$display("if_id_instr:%h if_instr:%h", if_id_instr, if_instr);
+
+    //Test the ID output.
+    //$display("if_id_instr:%h", if_id_instr);
+    //$display("id_ex_alu_a:%h id_ex_alu_b:%h lhb:%b llb:%b", id_ex_alu_in_a, id_ex_alu_in_b, id_ex_lhb, id_ex_llb);
+end
+
+
+//always @ (posedge clk)
+//begin
+//    //TEST CALL
+//    //if(call)
+//    //    $display("rf_dst_in:%h rf_dst_addr:%h reg_wrt:%b",rf_dst_in,rf_dst_addr, reg_wrt);
+//    //if (ret)
+//    //    $display("rf_r1_addr:%h rf_dst_addr:%h reg_wrt:%b",rf_r1_addr,rf_dst_addr, reg_wrt);
+//            //if (pc >= 10)
+//                //$display(" oops");
+//            //$display("pc:%h", pc);
+//            //$display("OP:%h WE:%b ctrl_mem_wrt:%b mem_adder:%d mem_data_in:%d mem_rd_data:%d", instr, we, mem_wrt, mem_addr, mem_wrt_data, mem_rd_data);
+//            //$display("OP:%h REG_RD_1:%h REG_RD_2:%h ALURESULT:%h WBDATA:%d", instr, reg_out_1, reg_out_2, Alu_result, wb_data);
+//            //
+//            //$display("lb_imm%d, lhb:%b llb:%b, Imm%d", Lb_imm, lhb, llb, Imm);
+//            //
+//            //$display("OP:%h ALU IN A:%d ALU IN B:%d RESULT:%h, ALU_CMD:%b", instr, A_in_alu, B_in_alu, Alu_result, Alu_Cmd);
+//end
+
 
 endmodule
