@@ -22,6 +22,7 @@ begin
             3'b000: //Not Eq
                 if (!z) begin
                     Out_pc <= branch_adder;
+                    $display("Out_pc:%h branch_adder:%h" ,Out_pc, B_imm);
                     flush <= 1;
                 end
                 else

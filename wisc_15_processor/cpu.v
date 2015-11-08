@@ -7,15 +7,15 @@
 `include "hazard_detect.v"
 
 //TODO: Reduce some of the extra control signals being used ex: llb,lhb and merge them into alu_op
-//TODO: Create special logic for call.
-//TODO: Stall for one instr on branch.
+//TODO: Instead of hacky halt, send as a signal down all registers and once is in last reg, assert hlt.
 
 module cpu(pc, hlt, clk, rst_n);
 input clk, rst_n;
 output [15:0] pc;
 output hlt;
 
-assign hlt = halt;
+//assign hlt = halt;
+reg hlt; // the final halt signal.
 reg z_flag, v_flag, n_flag; 
 
 reg [15:0] pc; 
@@ -32,20 +32,34 @@ hd detect_hazard(clk, rst_n, branch, call, mem_wb_wb_dst, mem_wb_write_reg, ex_m
 /********************************  IF PHASE  ***********************************/
 
 // ***PC REG***
-assign pc_we = ~stall && !hlt;
+reg [3:0] cd; //Hacky way to flush the remainder of the pipeline on halt.
+reg do_cd;
+reg halt;
+assign pc_we = ~stall && !halt;
 always @ (negedge rst_n, posedge clk) 
 begin
             //call_pc <= pc + 1; //Used to store the temp pc, otherwise a feedback loop is present.
             
-            if (!rst_n)
+
+            if (!rst_n) begin
                 pc <= 0;
+                do_cd <= 0;
+                cd <= 3;
+                halt <= 0;
+                hlt <= 0;
+            end
+            else if (countdown_to_hlt || do_cd) begin
+                if (cd == 1)
+                    hlt <= 1;
+                cd <= cd-1;
+                do_cd <= 1;
+                halt <= 1;
+            end
             else if (clk && pc_we)
                 pc <= new_pc;
-            //if(pc >= 16'h001A)
-            //    $finish();
 end
 
-wire id_reg_wrt, id_mem_to_reg, mem_wrt, branch, halt, id_set_over, id_set_zero, call, ret, alu_src, id_llb, id_lhb;
+wire id_reg_wrt, id_mem_to_reg, mem_wrt, branch, id_set_over, id_set_zero, call, ret, alu_src, id_llb, id_lhb;
 //Instruction Memory Stuff/ Branch logic
 //Address Calculation.
 
@@ -56,7 +70,7 @@ IM instruction_mem(clk,pc,rd_en,if_instr);
 wire if_id_clear, if_id_we;
 reg [15:0] if_id_instr;
 
-assign if_id_we = ~stall && !hlt && !flush;
+assign if_id_we = ~stall && !halt && !flush;
 assign if_id_clear = flush;
 always @ (posedge clk, negedge rst_n) begin
     //Set the registers.
@@ -77,14 +91,14 @@ assign Inst_imm[15:0] = {{12{if_id_instr[3]}},if_id_instr[3:0] }; //Sign extend 
 assign Lb_imm[15:0] = {{8{if_id_instr[7]}}, if_id_instr[7:0]}; //Sign extend the 8 bit immediate for input to the alu on lhb llb.
 
 assign Ret_reg = reg_out_1; //Grab the input for return addr as reading rs register.
-instr_logic pc_calc(flush, new_pc, pc, Ret_reg, C_imm, B_imm, if_id_instr[11:9], z_flag, v_flag, n_flag, branch, call, ret, halt);
+instr_logic pc_calc(flush, new_pc, pc, Ret_reg, C_imm, B_imm, if_id_instr[11:9], z_flag, v_flag, n_flag, branch, call, ret, hlt);
 
 
 
 //CONTROL UNIT STUFF
 wire [3:0] id_alu_cmd;
 //Sign extenders for branch offsets.
-control_unit control(id_alu_cmd, alu_src, id_reg_wrt, id_mem_to_reg, id_mem_wrt, branch, call, ret, halt, id_set_over, id_set_zero,id_llb,id_lhb, if_id_instr[15:12]);
+control_unit control(countdown_to_hlt, id_alu_cmd, alu_src, id_reg_wrt, id_mem_to_reg, id_mem_wrt, branch, call, ret, id_set_over, id_set_zero,id_llb,id_lhb, if_id_instr[15:12]);
 
 
 //Register File Stuff
@@ -116,7 +130,7 @@ reg [3:0] id_ex_wb_dst;
 reg [3:0] id_ex_alu_cmd;
 reg [15:0] id_ex_alu_in_a, id_ex_alu_in_b, id_ex_mem_data_in;
 
-assign id_ex_we = ~stall && !hlt;
+assign id_ex_we = ~stall && !halt;
 assign id_ex_clear = stall;
 always @ (posedge clk, negedge rst_n) begin
     //Set the registers.
@@ -261,7 +275,7 @@ begin
     $display("pc:%h stall:%b flush:%b", pc, stall, flush);
 
     //TEST CALL PC ADDR.
-    //$display("id_ex_alu_a:%h id_ex_wb_dst:%h", id_ex_alu_in_a, id_ex_wb_dst);
+    //display("id_ex_alu_a:%h id_ex_wb_dst:%h", id_ex_alu_in_a, id_ex_wb_dst);
 
     //$display("mem_wb_write_reg:%b  ex_mem:%b id_ex:%b", mem_wb_write_reg, ex_mem_write_reg, id_ex_write_reg);
     //Test the IF output. /j
@@ -269,9 +283,16 @@ begin
 
     //Test the ID output.
     $display("if_id_instr:%h", if_id_instr);
+    $display("do_cd:%b hlt:%b halt:%b cd:%b", do_cd, hlt, halt, cd);
     //$display("id_ex_alu_a:%h id_ex_alu_b:%h lhb:%b llb:%b", id_ex_alu_in_a, id_ex_alu_in_b, id_ex_lhb, id_ex_llb);
 end
 
+always @(clk) begin
+    if (clk)
+        $display("posclk");
+    else
+        $display("negclk");
+end
 
 //always @ (posedge clk)
 //begin

@@ -1,16 +1,18 @@
-module control_unit(Alu_Cmd, alu_src, reg_wrt, mem_to_reg, mem_wrt, branch, call, ret, halt, set_over, set_zero,llb,lhb, Inst);
+module control_unit(countdown_to_hlt, Alu_Cmd, alu_src, reg_wrt, mem_to_reg, mem_wrt, branch, call, ret, set_over, set_zero,llb,lhb, Inst);
 output [3:0] Alu_Cmd;
-output reg_wrt, mem_to_reg, mem_wrt, branch, halt, set_over, set_zero, call, ret, alu_src, llb, lhb;
+output reg_wrt, mem_to_reg, mem_wrt, branch, set_over, set_zero, call, ret, alu_src, llb, lhb;
+output countdown_to_hlt;
+reg countdown_to_hlt;
 input [3:0] Inst;
 
-reg reg_wrt, mem_to_reg, mem_wrt, branch, halt, set_over, set_zero, call, ret, alu_src, llb, lhb;
+reg reg_wrt, mem_to_reg, mem_wrt, branch, set_over, set_zero, call, ret, alu_src, llb, lhb;
 reg Alu_Cmd;
+
 
 always @ (Inst) begin
     //Default settings (for easier programming)
     mem_wrt <= 0;
     branch <= 0;
-    halt <= 0;
     set_zero <= 0;
     set_over <= 0;
     Alu_Cmd <= 4'b0000;
@@ -19,6 +21,7 @@ always @ (Inst) begin
     alu_src <= 0;
     lhb <= 0;
     llb <= 0;
+    countdown_to_hlt <= 0;
 
     case(Inst)
         4'b0000: //ADD
@@ -130,7 +133,9 @@ always @ (Inst) begin
                     begin
             reg_wrt <= 0;
             mem_to_reg <= 1;
-            halt <= 1;
+            countdown_to_hlt <= 1;
+            //To stop halting, just count down pipeline.
+            //halt <= 1;
         end
     endcase
 end
