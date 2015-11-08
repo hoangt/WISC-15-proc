@@ -32,7 +32,6 @@ integer i;
 ///////////////////////////////////////////////////////
 initial begin
   mem[0] = 16'h0000;					// reg0 is always 0,
-  //TODO: INITIAL RF
   //for (i = 0; i <=15; i = i +1)
   //    mem[i] = 16'h0000;
   //mem[1] = 3;

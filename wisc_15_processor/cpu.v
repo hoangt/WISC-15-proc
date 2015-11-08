@@ -8,7 +8,6 @@
 
 
 //TODO: Reduce some of the extra control signals being used ex: llb,lhb and merge them into alu_op
-//TODO: Need special hazard detection for SW (rt is actually a read for it).
 
 module cpu(pc, hlt, clk, rst_n);
 input clk, rst_n;
@@ -33,7 +32,7 @@ integer cycles;
 initial cycles  = 0;
 
 // ***PC REG***
-assign pc_we = !stall;
+assign pc_we = !stall && !id_ex_halt;
 wire [15:0] branch_adder;
 //Flush must be an asych signal.
 assign flush =  id_ex_call || (id_ex_branch && do_branch) || id_ex_ret;
@@ -41,12 +40,11 @@ assign branch_adder = B_imm + pc - 1; //We are in ex phase (two past pc+1)
 always @ (negedge rst_n, posedge clk) 
 begin
 
-//cycles = cycles + 1;
-    //if (flush)
-    //    $finish;
-    //if (branch && do_branch)
-    //    $finish;
-    //$display("z:%b n:%b v:%b", z_flag, n_flag, v_flag);
+    cycles = cycles + 1;// DEBUGGING TOOL
+    $display("cc:%d", cycles);
+    $display("PC:%h", pc);
+    //if (cycles > 40)
+        //$finish;
 
     if (!rst_n) begin
         pc <= 0;
@@ -70,8 +68,6 @@ begin
         else
             pc <= pc + 1;
     end
-    if (cycles > 40)
-        $finish;
 end
 
 wire id_reg_wrt, id_mem_to_reg, id_set_over, id_set_zero, ret, alu_src, id_llb, id_lhb;
@@ -86,7 +82,7 @@ wire if_id_clear, if_id_we;
 reg flushed;
 reg [15:0] if_id_instr;
 
-assign if_id_we = !stall && !flush;
+assign if_id_we = !stall && !flush && !id_ex_halt;
 assign if_id_clear = flush;
 always @ (posedge clk, negedge rst_n) begin
     //Set the registers.
@@ -145,7 +141,7 @@ reg [15:0] id_ex_instr;
 reg id_ex_call, id_ex_branch, id_ex_ret;
 reg id_ex_halt;
 
-assign id_ex_we = !stall && !flush;
+assign id_ex_we = !stall && !flush && !id_ex_halt;
 assign id_ex_clear = stall || flush;
 always @ (posedge clk, negedge rst_n) begin
     //Set the registers.
@@ -211,7 +207,7 @@ reg [3:0] ex_mem_wb_dst;
 reg [15:0] ex_mem_alu_output, ex_mem_mem_data_in; //alu output, data to be written to mem.
 reg ex_mem_halt;
 
-assign ex_mem_we = 1 && !hlt;
+assign ex_mem_we = 1 && !hlt && !ex_mem_halt;
 assign ex_mem_clear = 0;
 always @ (posedge clk, negedge rst_n) begin
     //Set the registers.
@@ -254,7 +250,7 @@ reg mem_wb_halt;
 reg [3:0] mem_wb_wb_dst;
 reg [15:0] mem_wb_alu_output, mem_wb_mem_data_output;
 
-assign mem_wb_we = 1 && !hlt;
+assign mem_wb_we = 1 && !mem_wb_halt;
 assign mem_wb_clear = 0;
 always @ (posedge clk, negedge rst_n) begin
     //Set the registers.
@@ -307,21 +303,21 @@ begin
 
 
 /* TESTING */
-always @ (posedge clk)
-begin
-    $display();
-    $display("pc:%h stall:%b flush:%b if_id_clear:%b", pc, stall, flush, if_id_clear);
-
-    $display("if_id_instr:%h", if_id_instr);
-    $display("ex_id_instr:%h", id_ex_instr);
-    $display("id_reg_o1:%h id_reg_o2:%h id_reg_2_adder:%h id_reg_1_adder:%h", reg_out_1, reg_out_2, rf_r2_addr, rf_r1_addr);
-    $display("id_alu_in_a:%h id_alu_in_b:%h alu_src:%h",id_alu_in_a, id_alu_in_b, alu_src );
-
-    $display("id_ex_alu_a:%h id_ex_alu_b%h", id_ex_alu_in_a, id_ex_alu_in_b );
-    if (ex_mem_mem_we)
-        $display("mem_addr:%h  ****** mem_data_in:%h", mem_addr, ex_mem_mem_data_in);
-    //$display("wb_data:%h wb_addr:%h", wb_data, ex_mem_wb_dst);
-end
+//always @ (posedge clk)
+//begin
+//    $display();
+//    $display("pc:%h stall:%b flush:%b if_id_clear:%b", pc, stall, flush, if_id_clear);
+//
+//    $display("if_id_instr:%h", if_id_instr);
+//    $display("ex_id_instr:%h", id_ex_instr);
+//    $display("id_reg_o1:%h id_reg_o2:%h id_reg_2_adder:%h id_reg_1_adder:%h", reg_out_1, reg_out_2, rf_r2_addr, rf_r1_addr);
+//    $display("id_alu_in_a:%h id_alu_in_b:%h alu_src:%h",id_alu_in_a, id_alu_in_b, alu_src );
+//
+//    $display("id_ex_alu_a:%h id_ex_alu_b%h", id_ex_alu_in_a, id_ex_alu_in_b );
+//    if (ex_mem_mem_we)
+//        $display("mem_addr:%h  ****** mem_data_in:%h", mem_addr, ex_mem_mem_data_in);
+//    //$display("wb_data:%h wb_addr:%h", wb_data, ex_mem_wb_dst);
+//end
 
 //always @(clk) begin
 //    if (clk)
