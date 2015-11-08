@@ -8,6 +8,7 @@
 
 
 //TODO: Reduce some of the extra control signals being used ex: llb,lhb and merge them into alu_op
+//TODO: Need special hazard detection for SW (rt is actually a read for it).
 
 module cpu(pc, hlt, clk, rst_n);
 input clk, rst_n;
@@ -34,7 +35,6 @@ initial cycles  = 0;
 // ***PC REG***
 assign pc_we = !stall;
 wire [15:0] branch_adder;
-//reg flush;
 //Flush must be an asych signal.
 assign flush =  id_ex_call || (id_ex_branch && do_branch) || id_ex_ret;
 assign branch_adder = B_imm + pc - 1; //We are in ex phase (two past pc+1)
@@ -46,7 +46,7 @@ begin
     //    $finish;
     //if (branch && do_branch)
     //    $finish;
-    $display("z:%b n:%b v:%b", z_flag, n_flag, v_flag);
+    //$display("z:%b n:%b v:%b", z_flag, n_flag, v_flag);
 
     if (!rst_n) begin
         pc <= 0;
@@ -74,7 +74,7 @@ begin
         $finish;
 end
 
-wire id_reg_wrt, id_mem_to_reg, mem_wrt, id_set_over, id_set_zero, ret, alu_src, id_llb, id_lhb;
+wire id_reg_wrt, id_mem_to_reg, id_set_over, id_set_zero, ret, alu_src, id_llb, id_lhb;
 //Instruction Memory Stuff/ Branch logic
 //Address Calculation.
 
@@ -122,9 +122,11 @@ rf REG_FILE(clk,rf_r1_addr,rf_r2_addr,reg_out_1,reg_out_2,re0,re1,mem_wb_wb_dst,
 wire [15:0] Lb_imm;
 assign Lb_imm[15:0] = {{8{if_id_instr[7]}}, if_id_instr[7:0]}; //Sign extend the 8 bit immediate for input to the alu on lhb llb.
 assign Imm = (id_lhb||id_llb) ? Lb_imm: Inst_imm; //Mux the lb immediate and normal inst immediate for input to alu.
-assign id_alu_in_b = (id_call) ? 16'h0000 : ((alu_src) ? Imm : reg_out_2);//Mux the alu_src imm and register_rd
+
+assign id_alu_in_b = (id_call) ? 16'h0000 :((alu_src) ? Imm : reg_out_2);//Mux the alu_src imm and register_rd
 assign id_alu_in_a = (id_call) ? pc : reg_out_1; // IN CALL WE ADD ZERO to current pc and store.
 
+assign Inst_imm[15:0] = {{12{if_id_instr[3]}},if_id_instr[3:0] }; //Sign extend the 4 bit immediate for input to alu.
 
 wire [3:0] id_wb_dst; //The register write address.
 wire [15:0] id_wb_data; //The register write data.
@@ -169,7 +171,7 @@ always @ (posedge clk, negedge rst_n) begin
     end
     else if (clk && id_ex_we) begin
         id_ex_mem_we <= id_mem_wrt;     //j
-        id_ex_mem_re <= ~id_mem_wrt; //TODO Might need to change later (for when reading memory has cost)
+        id_ex_mem_re <= !id_mem_wrt; //TODO Might need to change later (for when reading memory has cost)
         id_ex_mem_to_reg <= id_mem_to_reg; //j
         id_ex_write_reg  <= id_reg_wrt; //j
         id_ex_wb_dst <= id_wb_dst;      //j
@@ -195,7 +197,6 @@ end
 wire [15:0] C_imm, B_imm, Inst_imm;
 assign C_imm[15:0] = {{4{id_ex_instr[11]}},id_ex_instr[11:0] } ;//Sign extend values for call.
 assign B_imm[15:0] = {{7{id_ex_instr[8]}},id_ex_instr[8:0] }; //Sign extend values for branch.
-assign Inst_imm[15:0] = {{12{id_ex_instr[3]}},id_ex_instr[3:0] }; //Sign extend the 4 bit immediate for input to alu.
 assign Ret_reg = id_ex_alu_in_a; //Grab the input for return addr as reading rs register.
 
 //ALU STUFF
@@ -311,13 +312,15 @@ begin
     $display();
     $display("pc:%h stall:%b flush:%b if_id_clear:%b", pc, stall, flush, if_id_clear);
 
-    //Test the ID output.
     $display("if_id_instr:%h", if_id_instr);
-    //$display("ex_id_instr:%h", id_ex_instr);
-    //$display("in_a:%h in_b:%h",id_ex_alu_in_a, id_ex_alu_in_b);
-    //$display("ex_z:%b", ex_z);
-    //$display(" hlt:%b halt:%b ", hlt, halt);
-    //$display("id_ex_alu_a:%h id_ex_alu_b:%h lhb:%b llb:%b", id_ex_alu_in_a, id_ex_alu_in_b, id_ex_lhb, id_ex_llb);
+    $display("ex_id_instr:%h", id_ex_instr);
+    $display("id_reg_o1:%h id_reg_o2:%h id_reg_2_adder:%h id_reg_1_adder:%h", reg_out_1, reg_out_2, rf_r2_addr, rf_r1_addr);
+    $display("id_alu_in_a:%h id_alu_in_b:%h alu_src:%h",id_alu_in_a, id_alu_in_b, alu_src );
+
+    $display("id_ex_alu_a:%h id_ex_alu_b%h", id_ex_alu_in_a, id_ex_alu_in_b );
+    if (ex_mem_mem_we)
+        $display("mem_addr:%h  ****** mem_data_in:%h", mem_addr, ex_mem_mem_data_in);
+    //$display("wb_data:%h wb_addr:%h", wb_data, ex_mem_wb_dst);
 end
 
 //always @(clk) begin
