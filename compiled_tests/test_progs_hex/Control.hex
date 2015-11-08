@@ -17,6 +17,7 @@
 @0010 F000 //HALT
 @0011 A1AA //PASS: LHB
 @0012 F000 //HALT
+//@0016 F000 //HALT
 
 //
 //        LLB R15, 0x0F       

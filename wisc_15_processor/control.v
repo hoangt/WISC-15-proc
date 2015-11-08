@@ -115,7 +115,7 @@ always @ (Inst) begin
             branch <= 1;
         end
         4'b1101: //call
-                    begin
+                    begin //NOTE: On call we add pc to zero and store.
             reg_wrt <= 1;
             mem_to_reg <= 0;
             call <= 1;
