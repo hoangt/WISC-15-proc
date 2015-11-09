@@ -112,7 +112,6 @@ alu_common_bits rca_b15(w_carry[15], Sum[15], A[15], B[15], w_carry[14], sub);
 vl check_overflow(v_low,v_high,Sum,A,B,sub);
 assign low_v_use = ((v_low & padd) | (v_high & ~padd));
 
-//TODO: MAKE PADD WORK.
 //Logic for detecting if negative.
 assign n_high = (~v_high & Sum[15]) | (v_high & w_carry[15]);
 //Logic for lower bits (Mark negative if bottom is neg and paddsb, else default to n_high)
